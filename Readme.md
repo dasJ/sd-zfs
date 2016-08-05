@@ -7,12 +7,12 @@ You are expected to already have a root filesystem on a ZFS dataset.
 **Read and understand the Limitations before using this!**
 
 ## Installation
-Get [sd-zfs](https://aur.archlinux.org/packages/mkinitcpio-sd-zfs/) from the [AUR](https://wiki.archlinux.org/index.php/Arch_User_Repository). Users without Arch should read the manual installation instructions at the bottom of this document. **sd-zfs is not ready for use yet. You need to configure it first.**
+Get [mkinitcpio-sd-zfs](https://aur.archlinux.org/packages/mkinitcpio-sd-zfs/) from the [AUR](https://wiki.archlinux.org/index.php/Arch_User_Repository). Users without Arch should read the manual installation instructions at the bottom of this document. **sd-zfs is not ready for use yet. You need to configure it first.**
 
 ## Configuration
 
 ### Bootfs
-sd-zfs uses the bootfs value of your zpools. This is an options which is intended to point to the root filesystem that is used by booting. You need to set it on any pool (the pool with the root fielsystem is recommended). If you set it to different values on multiple pools, one is picked at random.
+sd-zfs uses the bootfs value of your zpools. This is an options which is intended to point to the root filesystem that is used for booting. You need to set it on any pool (the pool with the root fielsystem is recommended). If you set it to different values on multiple pools, one is picked at random.
 
 Check the bootfs value of all pools:
 ```
@@ -47,7 +47,7 @@ If you have any options for the ZFS module, you can add them to `/etc/modprobe.d
 If `/etc/hostid` exists during build, it will be included in the initrd. It is highly recommended to use this file. More information is found in the [Arch wiki](https://wiki.archlinux.org/index.php/Installing_Arch_Linux_on_ZFS#After_the_first_boot).
 
 #### Rebuilding initcpio
-After changing any of these mkinitcpio related things, you need to rebuild your kernel. Assuming you have the default `linux` package, you can just run:
+After changing any of these mkinitcpio related things, you need to rebuild your initrd. Assuming you have the default `linux` package, you can just run:
 ```
 # mkinitcpio -p linux
 ```
