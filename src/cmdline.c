@@ -9,11 +9,11 @@ int getCmdline(char **cmdline) {
 
 	fd = fopen("/proc/cmdline", "r");
 	if (fd == NULL) {
-		printf("Can not open kernel command line\n");
+		fprintf(stderr, "Can not open kernel command line\n");
 		return -1;
 	}
 	if (getline(cmdline, &linelen, fd) < 0) {
-		printf("Can not read kernel command line\n");
+		fprintf(stderr, "Can not read kernel command line\n");
 		fclose(fd);
 		return -2;
 	}

@@ -19,7 +19,7 @@ int getRootOptions(char **options) {
 
 	ret = cmdline_getParam("rootflags=", &optionsval);
 	if (ret < 0) {
-		printf("Could not get rootflags= parameter. Error %d\n", ret);
+		fprintf(stderr, "Could not get rootflags= parameter. Error %d\n", ret);
 		return 1;
 	} else if (ret == 1) {
 		// No rootflags specified, go with zfsutil
@@ -27,7 +27,7 @@ int getRootOptions(char **options) {
 		strcpy(*options, "zfsutil");
 		return 0;
 	} else if (ret != 0) {
-		printf("Unknown thing happened while reading the rootflags= paremter\n");
+		fprintf(stderr, "Unknown thing happened while reading the rootflags= paremter\n");
 		return 2;
 	}
 	// Do we already have zfsutil?
@@ -54,12 +54,12 @@ int getForce(char **forceParam) {
 
 	ret = cmdline_getParam("zfs_force=", &forceval);
 	if (ret < 0) {
-		printf("Could not get zfs_force= parameter. Error %d\n", ret);
+		fprintf(stderr, "Could not get zfs_force= parameter. Error %d\n", ret);
 		return 1;
 	} else if (ret == 1) {
 		// No zfs_force parameter specified
 	} else if (ret != 0) {
-		printf("Unknown thing happened while reading the zfs_force= paremter\n");
+		fprintf(stderr, "Unknown thing happened while reading the zfs_force= paremter\n");
 		return 2;
 	} else {
 		if (strcmp(forceval, "1") == 0) {
@@ -86,13 +86,13 @@ int getIgnoreCache(char *ignore) {
 
 	ret = cmdline_getParam("zfs_ignorecache", &ignoreval);
 	if (ret < 0) {
-		printf("Could not get zfs_ignorecache= parameter. Error %d\n", ret);
+		fprintf(stderr, "Could not get zfs_ignorecache= parameter. Error %d\n", ret);
 		return 1;
 	} else if (ret == 1) {
 		*ignore = 0;
 		return 0;
 	} else if (ret != 0) {
-		printf("Unknown thing happened while reading the ignorecache= paremter\n");
+		fprintf(stderr, "Unknown thing happened while reading the ignorecache= paremter\n");
 		return 2;
 	}
 	if (strcmp(ignoreval, "1") == 0) {
@@ -143,7 +143,7 @@ int generateScanUnit(char *directory, const char *targetName, const char *unitNa
 	if (fp == NULL) {
 		free(unitpath);
 		free(cacheLine);
-		printf("Can not write to scanning unit file\n");
+		fprintf(stderr, "Can not write to scanning unit file\n");
 		return 1;
 	}
 	fprintf(fp, "[Unit]\n\
@@ -196,7 +196,7 @@ int generateCacheUnit(char *directory, const char *targetName, const char *unitN
 	fp = fopen(unitpath, "w");
 	if (fp == NULL) {
 		free(unitpath);
-		printf("Can not write to scanning unit file\n");
+		fprintf(stderr, "Can not write to scanning unit file\n");
 		return 1;
 	}
 	fprintf(fp, "[Unit]\n\
@@ -259,7 +259,7 @@ int generateSysrootUnit(char *directory, int bootfs, char *dataset) {
 
 	// Get options
 	if (getRootOptions(&options) != 0) {
-		printf("Can not get root options\n");
+		fprintf(stderr, "Can not get root options\n");
 		free(what);
 		return 1;
 	}
@@ -270,7 +270,7 @@ int generateSysrootUnit(char *directory, int bootfs, char *dataset) {
 		free(unitpath);
 		free(options);
 		free(what);
-		printf("Can not write to mounting unit file\n");
+		fprintf(stderr, "Can not write to mounting unit file\n");
 		return 1;
 	}
 	fprintf(fp, "[Mount]\n\
@@ -287,7 +287,7 @@ Options=%s\n", what, options);
 
 int main(int argc, char *argv[]) {
 	if (argc != 4) {
-		printf("Only to be used as a systemd generator\n");
+		fprintf(stderr, "Only to be used as a systemd generator\n");
 		exit(1);
 	}
 
@@ -306,13 +306,13 @@ int main(int argc, char *argv[]) {
 
 	ret = cmdline_getParam("root=", &root);
 	if (ret < 0) {
-		printf("Could not get root= parameter. Error %d\n", ret);
+		fprintf(stderr, "Could not get root= parameter. Error %d\n", ret);
 		exit(1);
 	} else if (ret == 1) {
-		printf("No root parameter specified, don't know what to do\n");
+		fprintf(stderr, "No root parameter specified, don't know what to do\n");
 		exit(0);
 	} else if (ret != 0) {
-		printf("Unknown thing happened while reading the root= paremter\n");
+		fprintf(stderr, "Unknown thing happened while reading the root= paremter\n");
 		exit(1);
 	}
 	// Handle non-ZFS values
@@ -366,7 +366,7 @@ int main(int argc, char *argv[]) {
 
 		if (generateSysrootUnit(argv[systemd_param], 0, dataset) != 0) {
 			free(dataset);
-			printf("Can not generate sysroot unit\n");
+			fprintf(stderr, "Can not generate sysroot unit\n");
 			exit(1);
 		}
 		free(dataset);
@@ -376,22 +376,22 @@ int main(int argc, char *argv[]) {
 	// Bootfs
 	ret = cmdline_getParam("rpool=", &rpool);
 	if (ret < 0) {
-		printf("Could not get rpool= parameter. Error %d\n", ret);
+		fprintf(stderr, "Could not get rpool= parameter. Error %d\n", ret);
 		exit(1);
 	} else if (ret == 1) {
 		printf("Will use bootfs value of any pool\n");
 		if (generateSysrootUnit(argv[systemd_param], 1, NULL) != 0) {
-			printf("Can not generate sysroot unit\n");
+			fprintf(stderr, "Can not generate sysroot unit\n");
 			exit(1);
 		}
 		exit(0);
 	} else if (ret != 0) {
-		printf("Unknown thing happened while reading the rpool= paremter\n");
+		fprintf(stderr, "Unknown thing happened while reading the rpool= paremter\n");
 		exit(1);
 	}
 	printf("Will use bootfs of pool %s\n", rpool);
 	if (generateSysrootUnit(argv[systemd_param], 1, rpool) != 0) {
-		printf("Can not generate sysroot unit\n");
+		fprintf(stderr, "Can not generate sysroot unit\n");
 		exit(1);
 	}
 
