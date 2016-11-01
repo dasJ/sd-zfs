@@ -11,6 +11,7 @@ Please note that legacy root mounts are not supported because they are legacy te
 - Use `bootfs` to decide what dataset to use
 - Use zpool.cache for pool caching (can be overridden)
 - Include udev rules for importing by vdev
+- Export all pools on shutdown
 - Use actual hostid value if it's not found in `/etc/hostid`
 - Include `/etc/modprobe.d/{spl,zfs}.conf` into initrd
 

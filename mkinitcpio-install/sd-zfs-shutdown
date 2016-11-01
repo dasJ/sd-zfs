@@ -1,0 +1,15 @@
+#!/bin/bash
+
+build() {
+	map add_binary \
+		zpool \
+		/usr/lib/libgcc_s.so.1
+}
+
+help() {
+	cat <<HELPEOF
+This hook adds zpool to the initramfs. This is only
+if the image is extracted to /run/initramfs before shutdown.
+zpool is required to export all pools before shutdown.
+HELPEOF
+}

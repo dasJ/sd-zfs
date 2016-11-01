@@ -1,21 +1,27 @@
-ZFS_GENERATOR_OUT=initrd-zfs-generator
+GENERATOR_OUT=initrd-zfs-generator
 MOUNT_OUT=mount.initrd_zfs
+SHUTDOWN_OUT=zfs-shutdown
 LDFLAGS=-static
-CCFLAGS=-Wall -ggdb
+CCFLAGS=-Wall -std=gnu11 -pedantic
 
-all: mount zfs-generator
+all: mount generator shutdown
 
 mount: $(MOUNT_OUT)
 
-zfs-generator: $(ZFS_GENERATOR_OUT)
+generator: $(GENERATOR_OUT)
 
-$(MOUNT_OUT): src/mount.initrd_zfs.c src/cmdline.c src/cmdline.h
+shutdown: $(SHUTDOWN_OUT)
+
+$(MOUNT_OUT): src/mount.initrd_zfs.c
 	$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $^
 
-$(ZFS_GENERATOR_OUT): src/zfs-generator.c src/cmdline.c src/cmdline.h
+$(GENERATOR_OUT): src/zfs-generator.c src/cmdline.c src/cmdline.h
+	$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $^
+
+$(SHUTDOWN_OUT): src/zfs-shutdown.c
 	$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $^
 
 clean:
-	$(RM) $(MOUNT_OUT) $(ZFS_GENERATOR_OUT)
+	$(RM) $(MOUNT_OUT) $(ZFS_GENERATOR_OUT) $(ZFS_SHUTDOWN_OUT)
 
-.PHONY: all mount zfs-generator clean
+.PHONY: all mount generator shutdown clean
