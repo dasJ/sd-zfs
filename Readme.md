@@ -68,20 +68,26 @@ If you use another kernel (like `linux-lts`), you need to adapt the command.
 
 ## How it works
 
+### Generating
+When systemd is starting, all generators are run, this includes a generator for ZFS units.
+This generator parses the kernel parameters and creates systemd services for importing the pools as well as overriding sysroot.mount which is responsible for mounting the root.
+
 ### Importing
-When the initrd is running, the pools are imported (without actually mounting them).
-When importing, the `altroot` property of the pool is set (it's needed later, but also causes some trouble, see the limitations). It's ensured that all `cryptsetup` devices are unlocked before the pools are imported.
+When systemd is running, the pools are imported (without actually mounting them).
 
 There are two ways to import the pools:
 
 #### By scan
 If no cachefile exists, all devices in `/etc/disk/by-id` are scanned and all pools that imported without actually mount them.
+This can be forced via kernel parameter.
 
 #### By cachefile
 If the cachefile exists, all devices from the cachefile are imported without actually mounting them.
+This can be prevented via kernel parameter.
 
 ### Mounting
-The systemd mount-unit is overriden so it will only run after the pools are imported. systemd will invoke mount(8) with your `root` kernel parameter like this: `mount /dev/sda1 /sysroot` (assuming your root is `/dev/sda1`). This triggers `mount.zfs_member`, which is part of this repo. The disk parameter is irgnored by `mount.zfs`, instead, the `bootfs` value is searched in the pools. When a bootfs is found, it gets mounted. The exact process depends depends on the `mountpoint` value.
+The systemd mount-unit is overriden so it will only run after the pools are imported.
+The bootfs value is parsed here if autodetection is turned on.
 
 #### legacy mounting
 If the `mountpoint` value of the dataset is `legacy`, it gets mounted to `/sysroot` by executing `mount.zfs tank/root /sysroot`. Subdatasets are not handled in any way.
@@ -99,6 +105,3 @@ You need to `make all` and put the resulting files to the locations mentioned in
 
 ## Warranty
 Nope.
-
-## TODO
-- Test legacy mounts
