@@ -4,15 +4,26 @@ This project is an attempt to allow using systemd in the initrd and also having 
 It is intended for [mkinitcpio](https://git.archlinux.org/mkinitcpio.git/) (used by [Arch Linux](https://www.archlinux.org/)) but should also work with other systems.
 You are expected to already have a root filesystem on a ZFS dataset.
 
-**Read and understand the Limitations before using this!**
-
 ## Installation
 Get [mkinitcpio-sd-zfs](https://aur.archlinux.org/packages/mkinitcpio-sd-zfs/) from the [AUR](https://wiki.archlinux.org/index.php/Arch_User_Repository). Users without Arch should read the manual installation instructions at the bottom of this document. **sd-zfs is not ready for use yet. You need to configure it first.**
 
 ## Configuration
 
+### Kernel parameters
+sd-zfs supports multiple kernel parameters to select what dataset to boot from and to tune the booting process.
+
+#### Which dataset to boot from
+- `root=zfs:somepool/somedataset` - Use this dataset to boot from
+- `root=zfs:AUTO` - Check all pools for the bootfs value. See rpool to narrow the search
+- `rpool=somepool` - Check only this pool for the bootfs value. This may not contain slashes
+
+#### Other options
+- `rootflags=flags` - Use these flags when mounting the dataset
+- `zfs_force=1` - Force import of the pools
+- `zfs_ignorecache=1` - Ignore the pool cache file while booting
+
 ### Bootfs
-sd-zfs uses the bootfs value of your zpools. This is an options which is intended to point to the root filesystem that is used for booting. You need to set it on any pool (the pool with the root fielsystem is recommended). If you set it to different values on multiple pools, one is picked at random.
+sd-zfs can use the bootfs value of your zpools. This is an options which is intended to point to the root filesystem that is used for booting. You need to set it on any pool (the pool with the root fielsystem is recommended). If you set it to different values on multiple pools, one is picked at random.
 
 Check the bootfs value of all pools:
 ```
@@ -26,35 +37,26 @@ Set the bootfs value:
 # zpool set bootfs=tank/root tank
 ```
 
-This will make the system boot from the dataset "`root`" of the pool "`tank`". **The `mountpoint` value of the dataset needs to be `/` or `legacy`.** Note that legacy mountpoints are not really tested. But feel free to test and report any success/failures.
+This will make the system boot from the dataset "`root`" of the pool "`tank`". **The `mountpoint` value of the dataset needs to be `/` or `legacy`.**
 
-### root parameter
-Your kernel command line usually contains an option called `root`. You can check this by reading `/proc/cmdline`. How this value is configured depends on your bootloader. You must set it to any partition containing any pool. This is necessary so mount(8) detects that it needs to boot a ZFS filesystem.
-
-### mkinitcpio
-Of course, this is only relevant for mkinitcpio, but users of other systems need to adopt these settings.
-
-#### mkinitcpio.conf
-Add `sd-zfs` to the `HOOK` array of `/etc/mkinitcpio.conf`. As it depends on the `systemd` hook, it needs to come after it.
-
-#### Cache file
-When booting the system, all devices are scanned to check for pools. Depending on the number of devices you have, it can be faster to cache the pools. This is accomplished by using the standard ZFS `cachefile`, which will be created at `/etc/zfs/zpool.cache`. If it exists during creation of the initrd, it will be included.
-
-#### Custom module options
+### Custom module options
 If you have any options for the ZFS module, you can add them to `/etc/modprobe.d/zfs.conf`. This file will be included into the initrd if it exists during initrd build.
 
-#### Hostid
+### mkinitcpio.conf
+Add `sd-zfs` to the `HOOK` array of `/etc/mkinitcpio.conf`. As it depends on the `systemd` hook, it needs to come after it.
+
+### Cache file
+When booting the system, all devices are scanned to check for pools. Depending on the number of devices you have, it can be faster to cache the pools. This is accomplished by using the standard ZFS `cachefile`, which will be created at `/etc/zfs/zpool.cache`. If it exists during creation of the initrd, it will be included.
+
+### Hostid
 If `/etc/hostid` exists during build, it will be included in the initrd. It is highly recommended to use this file. More information is found in the [Arch wiki](https://wiki.archlinux.org/index.php/Installing_Arch_Linux_on_ZFS#After_the_first_boot).
 
-#### Rebuilding initcpio
-After changing any of these mkinitcpio related things, you need to rebuild your initrd. Assuming you have the default `linux` package, you can just run:
+### Rebuilding initcpio
+After changing any of these mkinitcpio related things (apart from the kernel command line and the bootfs value), you need to rebuild your initrd. Assuming you have the default `linux` package, you can just run:
 ```
 # mkinitcpio -p linux
 ```
 If you use another kernel (like `linux-lts`), you need to adapt the command.
-
-## Forcing imports
-When the pool was not properly exported by a system with another hostid, the pool can not be imported during mount. Add `zfs_force=1` to your kernel command line to force importing the pool.
 
 ## How it works
 
@@ -82,25 +84,6 @@ If the `mountpoint` value of the dataset is not `legacy`, it gets mounted by `zf
 ### Switching root
 systemd will now take care of killing all processes and switching root to `/sysroot`.
 
-## Limitations
-When using non-legacy mounts, the mounted datasets will be relative to `/sysroot`. Even if the files are found in `/`, they will show up in `/sysroot`:
-```
-# zfs list
-NAME         USED  AVAIL  REFER  MOUNTPOINT
-tank        1001M  8.65G    37K  /sysroot/zroot
-tank/root    999M  8.65G   999M  /sysroot
-```
-This is not just a cosmeting issue, it also affects the behaviour when using `zfs create`:
-```
-# zfs create tank/test
-# ls -la /zroot/test
-ls: cannot access '/zroot/test': No such file or directory
-# ls -la /sysroot/zroot/test
-total 1
-drwxr-xr-x 2 root root 2 Aug  4 19:10 .
-drwxr-xr-x 4 root root 4 Aug  4 19:10 ..
-```
-
 ## Manual installation
 See `mkinitcpio-sd-zfs.install`, which instructs `mkinitcpio` what to do.
 `$BUILDROOT` is the root of the initrd that is currently being built.
@@ -111,4 +94,3 @@ Nope.
 
 ## TODO
 - Test legacy mounts
-- Fix the limitations

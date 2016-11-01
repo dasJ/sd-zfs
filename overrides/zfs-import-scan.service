@@ -1,8 +1,0 @@
-[Unit]
-Requires=zfs-getforce.service
-After=zfs-getforce.service
-
-[Service]
-EnvironmentFile=/etc/conf.d/zfs
-ExecStart=
-ExecStart=/usr/bin/zpool import -d /dev/disk/by-id -R /sysroot $FORCE -aN

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 build() {
+	# Kernel modules
 	map add_module \
 		zavl \
 		znvpair \
@@ -8,55 +9,26 @@ build() {
 		zcommon \
 		zfs \
 		zpios \
-		spl \
-		splat \
-		zlib_deflate
+		spl
 
-	map add_binary \
-		fsck.zfs \
-		mount.zfs \
-		zpool \
-		hostid \
-		zfs \
-		/usr/lib/udev/vdev_id \
-		/usr/lib/udev/zvol_id
-
+	# udev rules
 	map add_file \
 		/usr/lib/udev/rules.d/60-zvol.rules \
 		/usr/lib/udev/rules.d/69-vdev.rules \
 		/usr/lib/udev/rules.d/90-zfs.rules \
 
-	map add_systemd_unit \
-		zfs-import-scan.service \
-		zfs-import-cache.service
+	# Generic binaries
+	# TODO Are all needed?
+	map add_binary \
+		modprobe \
+		/usr/lib/udev/vdev_id \
+		/usr/lib/udev/zvol_id
 
-	# Add the custom mounter and forcer
-	add_binary /usr/lib/mkinitcpio-sd-zfs/mount.zfs_member /usr/bin/
-	add_binary /usr/lib/mkinitcpio-sd-zfs/zfs-getforce /usr/bin/
+	# Our binaries
+	add_binary /usr/lib/mkinitcpio-sd-zfs/initrd-zfs-generator /usr/lib/systemd/system-generators/
 
-	# Add zfs-getforce unit
-	add_file /usr/lib/mkinitcpio-sd-zfs/units/zfs-getforce.service /usr/lib/systemd/system/
-
-	# Override units
-	for override in sysroot.mount zfs-import-{scan,cache}.service; do
-		add_file "/usr/lib/mkinitcpio-sd-zfs/overrides/${override}" "/etc/systemd/system/${override}.d/zfs.conf"
-	done
-
-	# Enable systemd units
-	mkdir -p "${BUILDROOT}/usr/lib/systemd/system/sysinit.target.wants"
-	ln -s /usr/lib/systemd/system/zfs-getforce.service "${BUILDROOT}/usr/lib/systemd/system/sysinit.target.wants/"
-	ln -s /usr/lib/systemd/system/zfs-import-scan.service "${BUILDROOT}/usr/lib/systemd/system/sysinit.target.wants/"
-	ln -s /usr/lib/systemd/system/zfs-import-cache.service "${BUILDROOT}/usr/lib/systemd/system/sysinit.target.wants/"
-
-	# Add some ZFS files
+	# Some ZFS-related files
 	for f in /etc/zfs/zpool.cache /etc/modprobe.d/zfs.conf /etc/hostid; do
 		[[ -f "${f}" ]] && add_file "${f}"
 	done
-
-	# To force the pool import
-	mkdir -p "${BUILDROOT}/etc/conf.d"
-
-	# Allow mount(8) to autodetect ZFS
-	echo 'zfs_member' >> "${BUILDROOT}/etc/filesystems"
-	echo 'zfs' >> "${BUILDROOT}/etc/filesystems"
 }
