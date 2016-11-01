@@ -18,7 +18,6 @@ build() {
 		/usr/lib/udev/rules.d/90-zfs.rules \
 
 	# Generic binaries
-	# TODO Are all needed?
 	map add_binary \
 		modprobe \
 		/usr/lib/udev/vdev_id \
@@ -28,7 +27,7 @@ build() {
 	add_binary /usr/lib/mkinitcpio-sd-zfs/initrd-zfs-generator /usr/lib/systemd/system-generators/
 
 	# Some ZFS-related files
-	for f in /etc/zfs/zpool.cache /etc/modprobe.d/zfs.conf /etc/hostid; do
+	for f in /etc/zfs/zpool.cache /etc/modprobe.d/{spl,zfs}.conf /etc/hostid; do
 		[[ -f "${f}" ]] && add_file "${f}"
 	done
 }
