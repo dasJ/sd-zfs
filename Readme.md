@@ -4,6 +4,13 @@ This project is an attempt to allow using systemd in the initrd and also having 
 It is intended for [mkinitcpio](https://git.archlinux.org/mkinitcpio.git/) (used by [Arch Linux](https://www.archlinux.org/)) but should also work with other systems.
 You are expected to already have a root filesystem on a ZFS dataset.
 
+## Functionality
+- Boot from any ZFS dataset
+- Use `bootfs` to decide what dataset to use
+- Use zpool.cache for pool caching (can be overridden)
+- Include udev rules for importing by vdev
+- Include `/etc/modprobe.d/{spl,zfs}.conf` into initrd
+
 ## Installation
 Get [mkinitcpio-sd-zfs](https://aur.archlinux.org/packages/mkinitcpio-sd-zfs/) from the [AUR](https://wiki.archlinux.org/index.php/Arch_User_Repository). Users without Arch should read the manual installation instructions at the bottom of this document. **sd-zfs is not ready for use yet. You need to configure it first.**
 
