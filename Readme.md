@@ -9,6 +9,7 @@ You are expected to already have a root filesystem on a ZFS dataset.
 - Use `bootfs` to decide what dataset to use
 - Use zpool.cache for pool caching (can be overridden)
 - Include udev rules for importing by vdev
+- Use actual hostid value if it's not found in `/etc/hostid`
 - Include `/etc/modprobe.d/{spl,zfs}.conf` into initrd
 
 ## Installation
