@@ -1,7 +1,0 @@
-[Unit]
-Description=ZFS force detection
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStart=/usr/bin/zfs-getforce
