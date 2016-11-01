@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
-#include "cmdline.h"
 
 /*
  * Tries to get the pool to mount from the bootfs value
@@ -32,9 +31,9 @@ int handleBootfs(char **pool) {
 		close(1);
 		dup(zpool[1]);
 		if (rpool == NULL) {
-			execl("/usr/bin/zpool", "/usr/bin/zpool", "list", "-Ho", "bootfs", NULL);
+			execl("/usr/bin/zpool", "zpool", "list", "-Ho", "bootfs", NULL);
 		} else {
-			execl("/usr/bin/zpool", "/usr/bin/zpool", "list", "-Ho", "bootfs", rpool, NULL);
+			execl("/usr/bin/zpool", "zpool", "list", "-Ho", "bootfs", rpool, NULL);
 		}
 		exit(254);
 	} else if (pid < 0) {
@@ -90,6 +89,18 @@ int main(int argc, char *argv[]) {
 	char isOption = 0;
 	char *newoptions;
 	size_t size;
+	// For mounting
+	int children[2];
+	pid_t pid;
+	char *linebuffer;
+	char *lines = NULL;
+	size_t nRead;
+	char *endLine;
+	char *lineToken;
+	char *mountpointToken;
+	char *dataset;
+	char *where;
+	int status;
 
 	// Parse parameters
 	if (argc < 3) {
@@ -133,7 +144,6 @@ int main(int argc, char *argv[]) {
 			strcpy(mountpoint, argv[i]);
 			continue;
 		}
-		printf("Line is %s\n", argv[i]);
 		// Call is broken
 		free(pool);
 		free(mountpoint);
@@ -161,11 +171,84 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Mount the dataset(s)
-	// TODO Mount the dataset(s)
-	printf("Pool: %s\n", pool);
-	//printf("Mountpoint: %s\n", mountpoint);
-	//printf("Options: %s\n", options);
+	pipe(children);
+	pid = fork();
+	if (pid == 0) {
+		close(1);
+		dup(children[1]);
+		execl("/usr/bin/zfs", "zfs", "list", "-r", pool, "-t", "filesystem", "-Ho", "name,mountpoint", NULL);
+		exit(254);
+	} else if (pid < 0) {
+		fprintf(stderr, "Can not fork\n");
+		free(pool);
+		free(mountpoint);
+		if (options != NULL) {
+			free(options);
+		}
+		close(children[0]);
+		close(children[1]);
+	}
+	close(children[1]);
 
+	linebuffer = malloc(16 * sizeof(char));
+	while (1) {
+		while ((nRead = read(children[0], linebuffer, 16)) > 0) {
+			if (lines == NULL) {
+				lines = malloc(nRead + 1);
+				memcpy(lines, linebuffer, nRead);
+				lines[nRead] = '\0';
+			} else {
+				size = strlen(lines) + nRead + 1;
+				lines = realloc(lines, size);
+				memcpy(&lines[strlen(lines)], linebuffer, nRead);
+				lines[size] = '\0';
+			}
+		}
+		if (nRead == 0) {
+			break;
+		}
+	}
+	waitpid(pid, 0, 0);
+	free(linebuffer);
+	close(children[0]);
+
+	lineToken = strtok_r(lines, "\n", &endLine);
+	while (lineToken != NULL) {
+		dataset = strtok_r(lineToken, "\t", &mountpointToken);
+		// Do not mount what we don't need to mount
+		if (strcmp(mountpointToken, "-") == 0 || strcmp(mountpointToken, "legacy") == 0) {
+			goto loopend;
+		}
+		// Build where to mount
+		where = malloc((strlen(mountpoint) + strlen(mountpointToken) + 1) * sizeof(char));
+		strcpy(where, mountpoint);
+		strcat(where, mountpointToken);
+		// Mount
+		pid = fork();
+		if (pid == 0) {
+			if (options == NULL) {
+				execl("/usr/bin/mount", "mount", "-o", "zfsutil", "-t", "zfs", dataset, where, NULL);
+			} else {
+				execl("/usr/bin/mount", "mount", "-o", options, "-t", "zfs", dataset, where, NULL);
+			}
+			exit(254);
+		} else if (pid < 0) {
+			fprintf(stderr, "Can not fork\n");
+		}
+		waitpid(pid, &status, 0);
+		if (status != 0) {
+			fprintf(stderr, "ZFS command failed with exit code %d, bailing out\n", status);
+			free(where);
+			break;
+		}
+		free(where);
+
+loopend:
+		lineToken = strtok_r(NULL, "\n", &endLine);
+	}
+
+	free(lines);
+	
 	free(pool);
 	free(mountpoint);
 	if (options != NULL) {

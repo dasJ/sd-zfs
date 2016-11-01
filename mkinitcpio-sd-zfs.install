@@ -20,6 +20,7 @@ build() {
 	# Generic binaries
 	map add_binary \
 		zpool \
+		zfs \
 		modprobe \
 		/usr/lib/libgcc_s.so.1 \
 		/usr/lib/udev/vdev_id \
