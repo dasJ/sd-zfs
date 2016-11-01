@@ -71,8 +71,8 @@ int getForce(char **forceParam) {
 		*forceParam = malloc(sizeof(char));
 		strcpy(*forceParam, "");
 	} else {
-		*forceParam = malloc(3 * sizeof(char));
-		strcpy(*forceParam, "-f");
+		*forceParam = malloc(4 * sizeof(char));
+		strcpy(*forceParam, " -f");
 	}
 	return 0;
 }
@@ -102,7 +102,7 @@ int getIgnoreCache(char *ignore) {
 	return 0;
 }
 
-int generateScanUnit(char *directory, const char *targetName, const char *unitName, int ignoreCache/* 1 = yes, 0 = no */, char *forceParam) {
+int generateScanUnit(char *directory, const char *targetName, const char *unitName, int ignoreCache/* 1 = yes, 0 = no */, char *forceParam, char *poolName) {
 	char *unitpath;
 	char *targetpath;
 	char *cacheLine;
@@ -158,7 +158,7 @@ Before=sysroot.mount\n\
 [Service]\n\
 Type=oneshot\n\
 RemainAfterExit=yes\n\
-ExecStart=/usr/bin/zpool import -aN -o cachefile=none %s\n", cacheLine, forceParam);
+ExecStart=/usr/bin/zpool import %s -N -o cachefile=none%s\n", cacheLine, poolName, forceParam);
 	fclose(fp);
 
 	free(cacheLine);
@@ -166,7 +166,7 @@ ExecStart=/usr/bin/zpool import -aN -o cachefile=none %s\n", cacheLine, forcePar
 	return 0;
 }
 
-int generateCacheUnit(char *directory, const char *targetName, const char *unitName, char *forceParam) {
+int generateCacheUnit(char *directory, const char *targetName, const char *unitName, char *forceParam, char *poolName) {
 	char *unitpath;
 	char *targetpath;
 	FILE *fp;
@@ -211,7 +211,7 @@ ConditionPathExists=/etc/zfs/zpool.cache\n\
 [Service]\n\
 Type=oneshot\n\
 RemainAfterExit=yes\n\
-ExecStart=/usr/bin/zpool import -c /etc/zfs/zpool.cache %s\n", forceParam);
+ExecStart=/usr/bin/zpool import %s -N -c /etc/zfs/zpool.cache%s\n", poolName, forceParam);
 	fclose(fp);
 	free(unitpath);
 
@@ -295,6 +295,9 @@ int main(int argc, char *argv[]) {
 	char *rpool = NULL;
 	char ignoreCache = 0;
 	char *forceParam = NULL;
+	char *poolName;
+	char *dataset;
+	char *slash;
 	int ret;
 	const int systemd_param = 1;
 	const char *importTarget = "initrd-root-device.target.wants";
@@ -329,20 +332,35 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 	// Generate units
-	if (generateScanUnit(argv[systemd_param], importTarget, scanUnitName, ignoreCache, forceParam) != 0) {
+	if (strcmp(root, "zfs:AUTO") != 0) {
+		poolName = malloc((strlen(root) - 4 + 1) * sizeof(char));
+		strcpy(poolName, &(root[4]));
+
+		slash = strchr(poolName, '/');
+		if (slash != NULL) {
+			*slash = '\0';
+		}
+	} else {
+		poolName = malloc(3 * sizeof(char));
+		strcpy(poolName, "-a");
+	}
+	if (generateScanUnit(argv[systemd_param], importTarget, scanUnitName, ignoreCache, forceParam, poolName) != 0) {
 		free(root);
 		free(forceParam);
+		free(poolName);
 		exit(1);
 	}
-	if ((ignoreCache == 0) && generateCacheUnit(argv[systemd_param], importTarget, cacheUnitName, forceParam) != 0) {
+	if ((ignoreCache == 0) && generateCacheUnit(argv[systemd_param], importTarget, cacheUnitName, forceParam, poolName) != 0) {
 		free(root);
 		free(forceParam);
+		free(poolName);
 		exit(1);
 	}
 	free(forceParam);
+	free(poolName);
 	// Direct dataset
 	if (strcmp(root, "zfs:AUTO") != 0) {
-		char *dataset = malloc((strlen(root) - strlen("zfs:") + 1) * sizeof(char));
+		dataset = malloc((strlen(root) - strlen("zfs:") + 1) * sizeof(char));
 		strcpy(dataset, &(root[strlen("zfs:")]));
 		free(root);
 
