@@ -1,23 +1,21 @@
 ZFS_GENERATOR_OUT=initrd-zfs-generator
-MOUNT_OUT=mount.zfs_member
+MOUNT_OUT=mount.initrd_zfs
 LDFLAGS=-static
-CCFLAGS=
+CCFLAGS=-Wall -ggdb
 
 all: mount zfs-generator
 
 mount: $(MOUNT_OUT)
 
-force: $(FORCE_OUT)
+zfs-generator: $(ZFS_GENERATOR_OUT)
 
-zfs-generator: $(GENERATOR_OUT)
-
-$(MOUNT_OUT): src/mount.zfs_member.c
-	$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $?
+$(MOUNT_OUT): src/mount.initrd_zfs.c src/cmdline.c src/cmdline.h
+	$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $^
 
 $(ZFS_GENERATOR_OUT): src/zfs-generator.c src/cmdline.c src/cmdline.h
 	$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $^
 
 clean:
-	$(RM) $(MOUNT_OUT) $(GENERATOR_OUT)
+	$(RM) $(MOUNT_OUT) $(ZFS_GENERATOR_OUT)
 
-.PHONY: all mount generator clean
+.PHONY: all mount zfs-generator clean
