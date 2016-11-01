@@ -4,6 +4,8 @@ This project is an attempt to allow using systemd in the initrd and also having 
 It is intended for [mkinitcpio](https://git.archlinux.org/mkinitcpio.git/) (used by [Arch Linux](https://www.archlinux.org/)) but should also work with other systems.
 You are expected to already have a root filesystem on a ZFS dataset.
 
+Please note that legacy root mounts are not supported because they are legacy technology.
+
 ## Functionality
 - Boot from any ZFS dataset
 - Use `bootfs` to decide what dataset to use
@@ -45,7 +47,7 @@ Set the bootfs value:
 # zpool set bootfs=tank/root tank
 ```
 
-This will make the system boot from the dataset "`root`" of the pool "`tank`". **The `mountpoint` value of the dataset needs to be `/` or `legacy`.**
+This will make the system boot from the dataset "`root`" of the pool "`tank`". **The `mountpoint` value of the dataset needs to be `/`.**
 
 ### Custom module options
 If you have any options for the ZFS module, you can add them to `/etc/modprobe.d/zfs.conf`. This file will be included into the initrd if it exists during initrd build.
@@ -88,12 +90,6 @@ This can be prevented via kernel parameter.
 ### Mounting
 The systemd mount-unit is overriden so it will only run after the pools are imported.
 The bootfs value is parsed here if autodetection is turned on.
-
-#### legacy mounting
-If the `mountpoint` value of the dataset is `legacy`, it gets mounted to `/sysroot` by executing `mount.zfs tank/root /sysroot`. Subdatasets are not handled in any way.
-
-#### Non-legacy mounting
-If the `mountpoint` value of the dataset is not `legacy`, it gets mounted by `zfs mount tank/root`. As the pool was imported with `altroot` set to `/legacy`, this mount will be relative to `/sysroot`. After this, all non-legacy datasets are searched and mounted as well.
 
 ### Switching root
 systemd will now take care of killing all processes and switching root to `/sysroot`.
