@@ -90,7 +90,6 @@ int getIgnoreCache(char *ignore) {
 		return 1;
 	} else if (ret == 1) {
 		*ignore = 0;
-		free(ignoreval);
 		return 0;
 	} else if (ret != 0) {
 		printf("Unknown thing happened while reading the ignorecache= paremter\n");
@@ -105,19 +104,26 @@ int getIgnoreCache(char *ignore) {
 
 int generateScanUnit(char *directory, const char *targetName, const char *unitName, int ignoreCache/* 1 = yes, 0 = no */, char *forceParam) {
 	char *unitpath;
+	char *targetpath;
 	char *cacheLine;
 	FILE *fp;
 
-	// Build path to unit's wants directory
-	unitpath = malloc((strlen(directory) + strlen(unitName) + strlen(targetName) + 3) * sizeof(char));
+	// Build paths
+	targetpath = malloc((strlen(directory) + strlen(targetName) + strlen(unitName) + 3) * sizeof(char));
+	strcpy(targetpath, directory);
+	strcat(targetpath, "/");
+	strcat(targetpath, targetName);
+	unitpath = malloc((strlen(directory) + strlen(unitName) + 2) * sizeof(char));
 	strcpy(unitpath, directory);
 	strcat(unitpath, "/");
-	strcat(unitpath, targetName);
-	// Make wants directory
-	mkdir(unitpath, 0775);
-	// Check if unit already exists
-	strcat(unitpath, "/");
 	strcat(unitpath, unitName);
+	// Make wants directory
+	mkdir(targetpath, 0775);
+	// Make symlink
+	strcat(targetpath, "/");
+	strcat(targetpath, unitName);
+	symlink(unitName, targetpath);
+	// Check if unit already exists
 	if (access(unitpath, R_OK) != -1) {
 		free(unitpath);
 		printf("Scanning unit file already exists\n");
@@ -146,6 +152,7 @@ DefaultDependencies=no\n\
 Requires=systemd-udev-settle.service\n\
 After=systemd-udev-settle.service\n\
 After=cryptsetup.target\n\
+Before=sysroot.mount\n\
 %s\n\
 \n\
 [Service]\n\
@@ -161,18 +168,25 @@ ExecStart=/usr/bin/zpool import -aN -o cachefile=none %s\n", cacheLine, forcePar
 
 int generateCacheUnit(char *directory, const char *targetName, const char *unitName, char *forceParam) {
 	char *unitpath;
+	char *targetpath;
 	FILE *fp;
 
-	// Build path to unit's wants directory
-	unitpath = malloc((strlen(directory) + strlen(unitName) + strlen(targetName) + 3) * sizeof(char));
+	// Build paths
+	targetpath = malloc((strlen(directory) + strlen(targetName) + strlen(unitName) + 3) * sizeof(char));
+	strcpy(targetpath, directory);
+	strcat(targetpath, "/");
+	strcat(targetpath, targetName);
+	unitpath = malloc((strlen(directory) + strlen(unitName) + 2) * sizeof(char));
 	strcpy(unitpath, directory);
 	strcat(unitpath, "/");
-	strcat(unitpath, targetName);
-	// Make wants directory
-	mkdir(unitpath, 0775);
-	// Check if unit already exists
-	strcat(unitpath, "/");
 	strcat(unitpath, unitName);
+	// Make wants directory
+	mkdir(targetpath, 0775);
+	// Make symlink
+	strcat(targetpath, "/");
+	strcat(targetpath, unitName);
+	symlink(unitName, targetpath);
+	// Check if unit already exists
 	if (access(unitpath, R_OK) != -1) {
 		free(unitpath);
 		printf("Caching unit file already exists\n");
@@ -191,6 +205,7 @@ DefaultDependencies=no\n\
 Requires=systemd-udev-settle.service\n\
 After=systemd-udev-settle.service\n\
 After=cryptsetup.target\n\
+Before=sysroot.mount\n\
 ConditionPathExists=/etc/zfs/zpool.cache\n\
 \n\
 [Service]\n\
@@ -211,19 +226,19 @@ int generateSysrootUnit(char *directory, int bootfs, char *dataset) {
 	char *what;
 	char *options = NULL;
 
-	// Build path to unit's wants directory
-	unitpath = malloc((strlen(directory) + strlen(unitName) + strlen(targetName) + 3) * sizeof(char));
+	// Build paths
+	unitpath = malloc((strlen(directory) + strlen(targetName) + strlen(unitName) + 3) * sizeof(char));
 	strcpy(unitpath, directory);
 	strcat(unitpath, "/");
 	strcat(unitpath, targetName);
-	// Make wants directory
+	// Make dropin directory
 	mkdir(unitpath, 0775);
-	// Check if unit already exists
 	strcat(unitpath, "/");
 	strcat(unitpath, unitName);
+	// Check if unit already exists
 	if (access(unitpath, R_OK) != -1) {
 		free(unitpath);
-		printf("Mouting unit file already exists\n");
+		printf("Mounting unit file already exists\n");
 		return 0;
 	}
 
@@ -260,7 +275,7 @@ int generateSysrootUnit(char *directory, int bootfs, char *dataset) {
 	}
 	fprintf(fp, "[Mount]\n\
 What=%s\n\
-Type=zfs\n\
+Type=initrd_zfs\n\
 Options=%s\n", what, options);
 	fclose(fp);
 	free(what);

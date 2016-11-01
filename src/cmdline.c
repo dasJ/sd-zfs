@@ -3,7 +3,7 @@
 #include <string.h>
 #include "cmdline.h"
 
-size_t getCmdline(char **cmdline) {
+int getCmdline(char **cmdline) {
 	FILE *fd;
 	size_t linelen;
 

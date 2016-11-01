@@ -19,12 +19,18 @@ build() {
 
 	# Generic binaries
 	map add_binary \
+		zpool \
 		modprobe \
+		/usr/lib/libgcc_s.so.1 \
 		/usr/lib/udev/vdev_id \
 		/usr/lib/udev/zvol_id
 
+	# units
+	add_systemd_unit systemd-udev-settle.service
+
 	# Our binaries
 	add_binary /usr/lib/mkinitcpio-sd-zfs/initrd-zfs-generator /usr/lib/systemd/system-generators/
+	add_binary /usr/lib/mkinitcpio-sd-zfs/mount.initrd_zfs /usr/bin
 
 	# Some ZFS-related files
 	for f in /etc/zfs/zpool.cache /etc/modprobe.d/{spl,zfs}.conf /etc/hostid; do
@@ -33,10 +39,10 @@ build() {
 
 	# Include hostid when it's not written to file
 	if [[ ! -f /etc/hostid ]]; then
-		AA="$(hostid | cut -n 1,2)"
-		BB="$(hostid | cut -n 3,4)"
-		CC="$(hostid | cut -n 5,6)"
-		DD="$(hostid | cut -n 7,8)"
+		AA="$(hostid | cut -b 1,2)"
+		BB="$(hostid | cut -b 3,4)"
+		CC="$(hostid | cut -b 5,6)"
+		DD="$(hostid | cut -b 7,8)"
 		printf "\x${DD}\x${CC}\x${BB}\x${AA}" > "${BUILDROOT}/etc/hostid"
 	fi
 }
