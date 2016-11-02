@@ -12,7 +12,7 @@ generator: $(GENERATOR_OUT)
 
 shutdown: $(SHUTDOWN_OUT)
 
-$(MOUNT_OUT): src/mount.initrd_zfs.c
+$(MOUNT_OUT): src/mount.initrd_zfs.c src/zfs-util.c src/zfs-util.h
 	$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $^
 
 $(GENERATOR_OUT): src/zfs-generator.c src/cmdline.c src/cmdline.h

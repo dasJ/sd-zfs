@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
+#include "zfs-util.h"
 
 /*
  * Tries to get the pool to mount from the bootfs value
@@ -89,7 +90,11 @@ int main(int argc, char *argv[]) {
 	char isOption = 0;
 	char *newoptions;
 	size_t size;
+	// For snapshotting
+	int ret;
+	char *snapDS = NULL;
 	// For mounting
+	char *snap;
 	int children[2];
 	pid_t pid;
 	char *linebuffer;
@@ -158,6 +163,10 @@ int main(int argc, char *argv[]) {
 		options = newoptions;
 	}
 
+	// Split away snapshot name
+	strtok(pool, "@");
+	snap = strtok(NULL, "@");
+
 	// Check if we need to handle bootfs
 	if (strncmp(pool, "zfs:AUTO", strlen("zfs:AUTO")) == 0) {
 		if (handleBootfs(&pool) != 0) {
@@ -169,6 +178,40 @@ int main(int argc, char *argv[]) {
 			}
 		}
 	}
+
+	// Handle snapshot
+	if (snap != NULL) {
+		ret = zfs_snapshot_exists(pool, snap);
+		if (ret < 0) {
+			fprintf(stderr, "Error while trying to check if snapshot exists\n");
+			goto aftersnap;
+		} else if (ret == 1) {
+			goto aftersnap;
+		}
+		// Build name of temporary dataset
+		snapDS = malloc((strlen(pool) + strlen(snap) + strlen("_initrd_") + 1) * sizeof(char));
+		strcpy(snapDS, pool);
+		strcat(snapDS, "_initrd_");
+		strcat(snapDS, snap);
+		// Remove temporary datasets if they exist
+		ret = zfs_ds_exists(snapDS);
+		if (ret < 0) {
+			fprintf(stderr, "Error while trying to check if temporary dataset exists\n");
+			goto aftersnap;
+		} else if (ret == 0) {
+			if (zfs_destroy_recursively(snapDS) != 0) {
+				fprintf(stderr, "Failed to remove existing datasets for snapshotting\n");
+				goto aftersnap;
+			}
+		}
+		// TODO Create new datasets from snapshots
+		// TODO Boot to new dataset
+	}
+aftersnap:
+	if (snapDS != NULL) {
+		free(snapDS);
+	}
+	exit(0);
 
 	// Mount the dataset(s)
 	pipe(children);
