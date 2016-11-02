@@ -8,16 +8,11 @@
 // Buffer for reading ZFS command output
 #define BUFSIZE 16
 #define ZFS_EXE "/usr/bin/zfs"
+#define ZPOOL_EXE "/usr/bin/zpool"
 #define ZFS_CMD "zfs"
+#define ZPOOL_CMD "zpool"
 
-/*
- * Executes a zfs command.
- * If needOutput is 1, the output of the command is written to output
- * which will be allocated. It must be NULL when passing in.
- * param must be a null-terminated array of parameters where the first
- * is ZFS_CMD
- */
-int executeZfs(char needOutput, char **output, char *param[]) {
+int execute(char *command, char needOutput, char **output, char *param[]) {
 	int pip[2];
 	pid_t pid;
 	int status;
@@ -39,7 +34,7 @@ int executeZfs(char needOutput, char **output, char *param[]) {
 			dup(pip[1]);
 		}
 		// Execute
-		execv(ZFS_EXE, param);
+		execv(command, param);
 		exit(254);
 	} else if (pid < 0) {
 		fprintf(stderr, "Can not fork\n");
@@ -73,6 +68,28 @@ int executeZfs(char needOutput, char **output, char *param[]) {
 	// Wait for quit
 	waitpid(pid, &status, 0);
 	return status;
+}
+
+/*
+ * Executes a zfs command.
+ * If needOutput is 1, the output of the command is written to output
+ * which will be allocated. It must be NULL when passing in.
+ * param must be a null-terminated array of parameters where the first
+ * is ZFS_CMD
+ */
+int executeZfs(char needOutput, char **output, char *param[]) {
+	return execute(ZFS_EXE, needOutput, output, param);
+}
+
+/*
+ * Executes a zpool command.
+ * If needOutput is 1, the output of the command is written to output
+ * which will be allocated. It must be NULL when passing in.
+ * param must be a null-terminated array of parameters where the first
+ * is ZPOOL_CMD
+ */
+int executeZpool(char needOutput, char **output, char *param[]) {
+	return execute(ZPOOL_EXE, needOutput, output, param);
 }
 
 int zfs_destroy_recursively(char *dataset) {
@@ -135,4 +152,24 @@ int zfs_ds_exists(char *dataset) {
 	} else {
 		return 1;
 	}
+}
+
+int zfs_get_bootfs(char *rpool, char **bootfs) {
+	int status;
+	char **cmdline;
+
+	if (rpool == NULL) {
+		cmdline = (char*[]) { ZPOOL_CMD, "list", "-Ho", "bootfs", NULL };
+	} else {
+		cmdline = (char*[]) { ZPOOL_CMD, "list", "-Ho", "bootfs", rpool, NULL };
+	}
+
+	*bootfs = NULL;
+
+	status = executeZpool(1, bootfs, cmdline);
+
+	if (status != 0) {
+		fprintf(stderr, "zpool get returned %d\n", status);
+	}
+	return status;
 }

@@ -11,11 +11,6 @@
 int handleBootfs(char **pool) {
 	char *rpool = NULL;
 	char *line = NULL;
-	char *linebuffer;
-	int nRead;
-	size_t size;
-	pid_t pid;
-	int zpool[2];
 	char *tok;
 	int ret = 1;
 
@@ -25,44 +20,14 @@ int handleBootfs(char **pool) {
 		strcpy(rpool, &((*pool)[strlen("zfs:AUTO:")]));
 	}
 
-	// Let's go!
-	pipe(zpool);
-	pid = fork();
-	if (pid == 0) {
-		close(1);
-		dup(zpool[1]);
-		if (rpool == NULL) {
-			execl("/usr/bin/zpool", "zpool", "list", "-Ho", "bootfs", NULL);
-		} else {
-			execl("/usr/bin/zpool", "zpool", "list", "-Ho", "bootfs", rpool, NULL);
+	ret = zfs_get_bootfs(rpool, &line);
+	if (ret != 0) {
+		if (rpool != NULL) {
+			free(rpool);
 		}
-		exit(254);
-	} else if (pid < 0) {
-		fprintf(stderr, "Can not fork\n");
-		free(rpool);
-		return -1;
+		return ret;
 	}
-	close(zpool[1]);
 
-	linebuffer = malloc(16 * sizeof(char));
-	while (1) {
-		while ((nRead = read(zpool[0], linebuffer, 16)) > 0) {
-			if (line == NULL) {
-				line = malloc(nRead + 1);
-				memcpy(line, linebuffer, nRead);
-				line[nRead] = '\0';
-			} else {
-				size = strlen(line) + nRead + 1;
-				line = realloc(line, size);
-				memcpy(&line[strlen(line)], linebuffer, nRead);
-				line[size] = '\0';
-			}
-		}
-		if (nRead == 0) {
-			break;
-		}
-	}
-	waitpid(pid, 0, 0);
 	tok = strtok(line, "\n");
 	while (tok != NULL) {
 		if (strcmp(tok, "-") != 0) {
@@ -73,12 +38,11 @@ int handleBootfs(char **pool) {
 		}
 		tok = strtok(NULL, "\n");
 	}
-	free(linebuffer);
 	free(line);
 
-	close(zpool[0]);
-	
-	free(rpool);
+	if (rpool != NULL) {
+		free(rpool);
+	}
 	return ret;
 }
 
@@ -211,7 +175,6 @@ aftersnap:
 	if (snapDS != NULL) {
 		free(snapDS);
 	}
-	exit(0);
 
 	// Mount the dataset(s)
 	pipe(children);

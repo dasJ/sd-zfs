@@ -30,4 +30,13 @@ int zfs_snapshot_exists(char *dataset, char *snapshot);
  */
 int zfs_ds_exists(char *dataset);
 
+/**
+ * Looks for a bootfs value in all imported pools (if rpool is NULL).
+ * If rpool is not NULL, only this pool will be searched.
+ * Returns 0 if everything was okay.
+ * bootfs will be an allocated string containing all bootfs values
+ * (including '-'), separated by newlines
+ */
+int zfs_get_bootfs(char *rpool, char **bootfs);
+
 #endif /* ZFS_UTIL_H */
