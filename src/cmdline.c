@@ -42,3 +42,25 @@ int cmdline_getParam(char *paramName, char **value) {
 	free(cmdline);
 	return 1;
 }
+
+int cmdline_getSwitch(char *switchName, char *value) {
+	char *cmdline = NULL;
+	char *param;
+
+	if (getCmdline(&cmdline) < 0) {
+		return -1;
+	}
+
+	*value = 0;
+	// Parse tokens of command line
+	param = strtok(cmdline, " \t\n");
+	do {
+		if (strcmp(param, switchName) == 0) {
+			*value = 1;
+			break;
+		}
+	} while ((param = strtok(NULL, " \t\n")) != NULL);
+
+	free(cmdline);
+	return 0;
+}

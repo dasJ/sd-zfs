@@ -12,6 +12,7 @@ Please note that legacy root mounts are not supported because they are legacy te
 - Use zpool.cache for pool caching (can be overridden)
 - Include udev rules for importing by vdev
 - Export all pools on shutdown
+- Mount root as read-only when `rw` is not set on command line
 - Use actual hostid value if it's not found in `/etc/hostid`
 - Include `/etc/modprobe.d/{spl,zfs}.conf` into initrd
 

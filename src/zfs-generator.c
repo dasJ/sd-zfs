@@ -16,6 +16,8 @@
 int getRootOptions(char **options) {
 	char *optionsval;
 	int ret;
+	char rw;
+	size_t len;
 
 	ret = cmdline_getParam("rootflags=", &optionsval);
 	if (ret < 0) {
@@ -23,24 +25,34 @@ int getRootOptions(char **options) {
 		return 1;
 	} else if (ret == 1) {
 		// No rootflags specified, go with zfsutil
-		*options = malloc((strlen("zfsutil") + 1) * sizeof(char));
-		strcpy(*options, "zfsutil");
-		return 0;
+		optionsval = malloc((strlen("zfsutil") + 1) * sizeof(char));
+		strcpy(optionsval, "zfsutil");
 	} else if (ret != 0) {
 		fprintf(stderr, "Unknown thing happened while reading the rootflags= paremter\n");
 		return 2;
 	}
+	len = strlen(optionsval) + 1;
 	// Do we already have zfsutil?
-	if (strstr(optionsval, "zfsutil") != NULL) {
-		// Just return what we got
-		*options = malloc((strlen(optionsval) + 1) * sizeof(char));
-		strcpy(*options, optionsval);
-		return 0;
+	if (strstr(optionsval, "zfsutil") == NULL) {
+		len += strlen(",zfsutil");
 	}
-	// We do not have zfsutil
-	*options = malloc((strlen(optionsval) + strlen(",zfsutil") + 1) * sizeof(char));
+	// Do we need to switch to ro?
+	ret = cmdline_getSwitch("rw", &rw);
+	if (ret != 0) {
+		fprintf(stderr, "Could not get rw parameter");
+	} else if (rw != 1) {
+		len += strlen(",ro");
+	}
+	// Allocate and fill
+	*options = malloc(len * sizeof(char));
 	strcpy(*options, optionsval);
-	strcat(*options, ",zfsutil");
+	if (strstr(optionsval, "zfsutil") == NULL) {
+		strcat(*options, ",zfsutil");
+	}
+	if (rw != 1) {
+		strcat(*options, ",ro");
+	}
+	free(optionsval);
 	return 0;
 }
 
