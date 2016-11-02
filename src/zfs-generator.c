@@ -230,7 +230,7 @@ ExecStart=/usr/bin/zpool import %s -N -c /etc/zfs/zpool.cache%s\n", poolName, fo
 	return 0;
 }
 
-int generateSysrootUnit(char *directory, int bootfs, char *dataset) {
+int generateSysrootUnit(char *directory, int bootfs, char *dataset, char *snapshot) {
 	char *unitpath;
 	FILE *fp;
 	char *targetName = "sysroot.mount.d";
@@ -267,6 +267,12 @@ int generateSysrootUnit(char *directory, int bootfs, char *dataset) {
 	} else {
 		what = malloc((strlen(dataset) + 1) * sizeof(char));
 		strcpy(what, dataset);
+	}
+	// Handle snapshots
+	if (snapshot != NULL) {
+		what = realloc(what, (strlen(what) + strlen(snapshot) + 2) * sizeof(char));
+		strcat(what, "@");
+		strcat(what, snapshot);
 	}
 
 	// Get options
@@ -310,6 +316,7 @@ int main(int argc, char *argv[]) {
 	char *poolName;
 	char *dataset;
 	char *slash;
+	char *snap;
 	int ret;
 	const int systemd_param = 1;
 	const char *importTarget = "initrd-root-device.target.wants";
@@ -344,11 +351,15 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 	// Generate units
-	if (strcmp(root, "zfs:AUTO") != 0) {
+	if (strcmp(root, "zfs:AUTO") != 0 && strncmp(root, "zfs:AUTO@", strlen("zfs:AUTO@")) != 0) {
 		poolName = malloc((strlen(root) - 4 + 1) * sizeof(char));
 		strcpy(poolName, &(root[4]));
 
 		slash = strchr(poolName, '/');
+		if (slash != NULL) {
+			*slash = '\0';
+		}
+		slash = strchr(poolName, '@');
 		if (slash != NULL) {
 			*slash = '\0';
 		}
@@ -370,13 +381,16 @@ int main(int argc, char *argv[]) {
 	}
 	free(forceParam);
 	free(poolName);
+	// Snapshot
+	strtok(root, "@");
+	snap = strtok(NULL, "@");
 	// Direct dataset
 	if (strcmp(root, "zfs:AUTO") != 0) {
 		dataset = malloc((strlen(root) - strlen("zfs:") + 1) * sizeof(char));
 		strcpy(dataset, &(root[strlen("zfs:")]));
 		free(root);
 
-		if (generateSysrootUnit(argv[systemd_param], 0, dataset) != 0) {
+		if (generateSysrootUnit(argv[systemd_param], 0, dataset, snap) != 0) {
 			free(dataset);
 			fprintf(stderr, "Can not generate sysroot unit\n");
 			exit(1);
@@ -384,7 +398,6 @@ int main(int argc, char *argv[]) {
 		free(dataset);
 		exit(0);
 	}
-	free(root);
 	// Bootfs
 	ret = cmdline_getParam("rpool=", &rpool);
 	if (ret < 0) {
@@ -392,7 +405,7 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	} else if (ret == 1) {
 		printf("Will use bootfs value of any pool\n");
-		if (generateSysrootUnit(argv[systemd_param], 1, NULL) != 0) {
+		if (generateSysrootUnit(argv[systemd_param], 1, NULL, snap) != 0) {
 			fprintf(stderr, "Can not generate sysroot unit\n");
 			exit(1);
 		}
@@ -402,10 +415,11 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 	printf("Will use bootfs of pool %s\n", rpool);
-	if (generateSysrootUnit(argv[systemd_param], 1, rpool) != 0) {
+	if (generateSysrootUnit(argv[systemd_param], 1, rpool, snap) != 0) {
 		fprintf(stderr, "Can not generate sysroot unit\n");
 		exit(1);
 	}
 
+	free(root);
 	free(rpool);
 }
