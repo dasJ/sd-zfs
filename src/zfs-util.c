@@ -173,3 +173,17 @@ int zfs_get_bootfs(char *rpool, char **bootfs) {
 	}
 	return status;
 }
+
+int zfs_list_datasets_with_mp(char *dataset, char **datasets) {
+	int status;
+	char *cmdline[] = { ZFS_CMD, "list", "-r", dataset, "-t", "filesystem", "-Ho", "name,mountpoint", NULL };
+
+	*datasets = NULL;
+
+	status = executeZfs(1, datasets, cmdline);
+
+	if (status != 0) {
+		fprintf(stderr, "zfs returned %d\n", status);
+	}
+	return status;
+}

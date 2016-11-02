@@ -59,11 +59,8 @@ int main(int argc, char *argv[]) {
 	char *snapDS = NULL;
 	// For mounting
 	char *snap;
-	int children[2];
-	pid_t pid;
-	char *linebuffer;
 	char *lines = NULL;
-	size_t nRead;
+	pid_t pid;
 	char *endLine;
 	char *lineToken;
 	char *mountpointToken;
@@ -177,46 +174,14 @@ aftersnap:
 	}
 
 	// Mount the dataset(s)
-	pipe(children);
-	pid = fork();
-	if (pid == 0) {
-		close(1);
-		dup(children[1]);
-		execl("/usr/bin/zfs", "zfs", "list", "-r", pool, "-t", "filesystem", "-Ho", "name,mountpoint", NULL);
-		exit(254);
-	} else if (pid < 0) {
-		fprintf(stderr, "Can not fork\n");
+	ret = zfs_list_datasets_with_mp(pool, &lines);
+	if (ret != 0) {
 		free(pool);
 		free(mountpoint);
 		if (options != NULL) {
 			free(options);
 		}
-		close(children[0]);
-		close(children[1]);
 	}
-	close(children[1]);
-
-	linebuffer = malloc(16 * sizeof(char));
-	while (1) {
-		while ((nRead = read(children[0], linebuffer, 16)) > 0) {
-			if (lines == NULL) {
-				lines = malloc(nRead + 1);
-				memcpy(lines, linebuffer, nRead);
-				lines[nRead] = '\0';
-			} else {
-				size = strlen(lines) + nRead + 1;
-				lines = realloc(lines, size);
-				memcpy(&lines[strlen(lines)], linebuffer, nRead);
-				lines[size] = '\0';
-			}
-		}
-		if (nRead == 0) {
-			break;
-		}
-	}
-	waitpid(pid, 0, 0);
-	free(linebuffer);
-	close(children[0]);
 
 	lineToken = strtok_r(lines, "\n", &endLine);
 	while (lineToken != NULL) {

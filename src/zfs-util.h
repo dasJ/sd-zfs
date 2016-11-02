@@ -39,4 +39,12 @@ int zfs_ds_exists(char *dataset);
  */
 int zfs_get_bootfs(char *rpool, char **bootfs);
 
+/*
+ * Lists all datasets which are child of the specified dataset (including
+ * the dataset itself). The output, which is \n-spearated, is written to dataset.
+ * Each line contains the name of the dataset, a tab and the mountpoint of the dataset.
+ * Returns 0 if everything was okay.
+ */
+int zfs_list_datasets_with_mp(char *dataset, char **datasets);
+
 #endif /* ZFS_UTIL_H */
