@@ -26,7 +26,7 @@ int handleBootfs(char **pool) {
 }
 
 int main(int argc, char *argv[]) {
-	char *pool = NULL;
+	char *dataset;
 	char *mountpoint = NULL;
 	char *options = NULL;
 	// For parameter parsing
@@ -39,17 +39,15 @@ int main(int argc, char *argv[]) {
 	// For mounting
 	char *snap;
 	char *lines = NULL;
-	pid_t pid;
 	char *endLine;
 	char *lineToken;
 	char *mountpointToken;
-	char *dataset;
+	char *what;
 	char *where;
-	int status;
 
 	// Parse parameters
 	if (argc < 3) {
-		fprintf(stderr, "Call like: %s <pool> <mount_point> [-o option[,...]]\n", argv[0]);
+		fprintf(stderr, "Call like: %s <dataset> <mount_point> [-o option[,...]]\n", argv[0]);
 		exit(1);
 	}
 	for (int i = 1; i < argc; i++) {
@@ -77,10 +75,10 @@ int main(int argc, char *argv[]) {
 			isOption = 1;
 			continue;
 		}
-		// Next is the pool
-		if (pool == NULL) {
-			pool = malloc((strlen(argv[i]) + 1) * sizeof(char));
-			strcpy(pool, argv[i]);
+		// Next is the dataset
+		if (dataset == NULL) {
+			dataset = malloc((strlen(argv[i]) + 1) * sizeof(char));
+			strcpy(dataset, argv[i]);
 			continue;
 		}
 		// Next is the mountpoint
@@ -90,9 +88,9 @@ int main(int argc, char *argv[]) {
 			continue;
 		}
 		// Call is broken
-		free(pool);
+		free(dataset);
 		free(mountpoint);
-		fprintf(stderr, "Call like: %s <pool> <mount_point> [-o option[,...]]\n", argv[0]);
+		fprintf(stderr, "Call like: %s <dataset> <mount_point> [-o option[,...]]\n", argv[0]);
 		exit(1);
 	}
 	// Get rid of the trailing comma
@@ -104,14 +102,14 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Split away snapshot name
-	strtok(pool, "@");
+	strtok(dataset, "@");
 	snap = strtok(NULL, "@");
 
 	// Check if we need to handle bootfs
-	if (strncmp(pool, "zfs:AUTO", strlen("zfs:AUTO")) == 0) {
-		if (handleBootfs(&pool) != 0) {
+	if (strncmp(dataset, "zfs:AUTO", strlen("zfs:AUTO")) == 0) {
+		if (handleBootfs(&dataset) != 0) {
 			fprintf(stderr, "Can not get bootfs value\n");
-			free(pool);
+			free(dataset);
 			free(mountpoint);
 			if (options != NULL) {
 				free(options);
@@ -121,7 +119,7 @@ int main(int argc, char *argv[]) {
 
 	// Handle snapshot
 	if (snap != NULL) {
-		ret = zfs_snapshot_exists(pool, snap);
+		ret = zfs_snapshot_exists(dataset, snap);
 		if (ret < 0) {
 			fprintf(stderr, "Error while trying to check if snapshot exists\n");
 			goto aftersnap;
@@ -129,8 +127,8 @@ int main(int argc, char *argv[]) {
 			goto aftersnap;
 		}
 		// Build name of temporary dataset
-		snapDS = malloc((strlen(pool) + strlen(snap) + strlen("_initrd_") + 1) * sizeof(char));
-		strcpy(snapDS, pool);
+		snapDS = malloc((strlen(dataset) + strlen(snap) + strlen("_initrd_") + 1) * sizeof(char));
+		strcpy(snapDS, dataset);
 		strcat(snapDS, "_initrd_");
 		strcat(snapDS, snap);
 		// Remove temporary datasets if they exist
@@ -153,9 +151,9 @@ aftersnap:
 	}
 
 	// Mount the dataset(s)
-	ret = zfs_list_datasets_with_mp(pool, &lines);
+	ret = zfs_list_datasets_with_mp(dataset, &lines);
 	if (ret != 0) {
-		free(pool);
+		free(dataset);
 		free(mountpoint);
 		if (options != NULL) {
 			free(options);
@@ -164,7 +162,7 @@ aftersnap:
 
 	lineToken = strtok_r(lines, "\n", &endLine);
 	while (lineToken != NULL) {
-		dataset = strtok_r(lineToken, "\t", &mountpointToken);
+		what = strtok_r(lineToken, "\t", &mountpointToken);
 		// Do not mount what we don't need to mount
 		if (strcmp(mountpointToken, "-") == 0 || strcmp(mountpointToken, "legacy") == 0) {
 			goto loopend;
@@ -174,20 +172,9 @@ aftersnap:
 		strcpy(where, mountpoint);
 		strcat(where, mountpointToken);
 		// Mount
-		pid = fork();
-		if (pid == 0) {
-			if (options == NULL) {
-				execl("/usr/bin/mount", "mount", "-o", "zfsutil", "-t", "zfs", dataset, where, NULL);
-			} else {
-				execl("/usr/bin/mount", "mount", "-o", options, "-t", "zfs", dataset, where, NULL);
-			}
-			exit(254);
-		} else if (pid < 0) {
-			fprintf(stderr, "Can not fork\n");
-		}
-		waitpid(pid, &status, 0);
-		if (status != 0) {
-			fprintf(stderr, "ZFS command failed with exit code %d, bailing out\n", status);
+		ret = zfs_mount(what, where, options);
+		if (ret != 0) {
+			fprintf(stderr, "ZFS command failed with exit code %d, bailing out\n", ret);
 			free(where);
 			break;
 		}
@@ -199,7 +186,7 @@ loopend:
 
 	free(lines);
 	
-	free(pool);
+	free(dataset);
 	free(mountpoint);
 	if (options != NULL) {
 		free(options);

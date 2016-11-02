@@ -9,8 +9,10 @@
 #define BUFSIZE 16
 #define ZFS_EXE "/usr/bin/zfs"
 #define ZPOOL_EXE "/usr/bin/zpool"
+#define MOUNT_EXE "/usr/bin/mount"
 #define ZFS_CMD "zfs"
 #define ZPOOL_CMD "zpool"
+#define MOUNT_CMD "mount"
 
 int execute(char *command, char needOutput, char **output, char *param[]) {
 	int pip[2];
@@ -90,6 +92,17 @@ int executeZfs(char needOutput, char **output, char *param[]) {
  */
 int executeZpool(char needOutput, char **output, char *param[]) {
 	return execute(ZPOOL_EXE, needOutput, output, param);
+}
+
+/*
+ * Executes a mount command.
+ * If needOutput is 1, the output of the command is written to output
+ * which will be allocated. It must be NULL when passing in.
+ * param must be a null-terminated array of parameters where the first
+ * is MOUNT_CMD
+ */
+int executeMount(char needOutput, char **output, char *param[]) {
+	return execute(MOUNT_EXE, needOutput, output, param);
 }
 
 int zfs_destroy_recursively(char *dataset) {
@@ -202,4 +215,16 @@ int zfs_list_datasets_with_mp(char *dataset, char **datasets) {
 		fprintf(stderr, "zfs returned %d\n", status);
 	}
 	return status;
+}
+
+int zfs_mount(char *what, char *where, char *options) {
+	char **cmdline;
+
+	if (options == NULL) {
+		cmdline = (char*[]) { MOUNT_CMD, "-t", "zfs", what, where, NULL };
+	} else {
+		cmdline = (char*[]) { MOUNT_CMD, "-t", "zfs", "-o", options, what, where, NULL };
+	}
+
+	return executeMount(0, NULL, cmdline);
 }

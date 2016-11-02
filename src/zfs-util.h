@@ -47,4 +47,11 @@ int zfs_get_bootfs(char *rpool, char **bootfs);
  */
 int zfs_list_datasets_with_mp(char *dataset, char **datasets);
 
+/*
+ * Mounts what at where with specified options.
+ * Options may be NULL.
+ * Returns the return code of the mount command.
+ */
+int zfs_mount(char *what, char *where, char *options);
+
 #endif /* ZFS_UTIL_H */
