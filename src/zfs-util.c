@@ -157,6 +157,8 @@ int zfs_ds_exists(char *dataset) {
 int zfs_get_bootfs(char *rpool, char **bootfs) {
 	int status;
 	char **cmdline;
+	char *tok;
+	char *line;
 
 	if (rpool == NULL) {
 		cmdline = (char*[]) { ZPOOL_CMD, "list", "-Ho", "bootfs", NULL };
@@ -166,11 +168,25 @@ int zfs_get_bootfs(char *rpool, char **bootfs) {
 
 	*bootfs = NULL;
 
-	status = executeZpool(1, bootfs, cmdline);
+	status = executeZpool(1, &line, cmdline);
 
 	if (status != 0) {
 		fprintf(stderr, "zpool get returned %d\n", status);
+		return status;
 	}
+	status = 1;
+
+	tok = strtok(line, "\n");
+	while (tok != NULL) {
+		if (strcmp(tok, "-") != 0) {
+			*bootfs = malloc((strlen(tok) + 1) * sizeof(char));
+			strcpy(*bootfs, tok);
+			status = 0;
+			break;
+		}
+		tok = strtok(NULL, "\n");
+	}
+	free(line);
 	return status;
 }
 

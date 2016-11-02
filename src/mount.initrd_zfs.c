@@ -10,8 +10,6 @@
  */
 int handleBootfs(char **pool) {
 	char *rpool = NULL;
-	char *line = NULL;
-	char *tok;
 	int ret = 1;
 
 	// Handle rpool
@@ -20,26 +18,7 @@ int handleBootfs(char **pool) {
 		strcpy(rpool, &((*pool)[strlen("zfs:AUTO:")]));
 	}
 
-	ret = zfs_get_bootfs(rpool, &line);
-	if (ret != 0) {
-		if (rpool != NULL) {
-			free(rpool);
-		}
-		return ret;
-	}
-
-	tok = strtok(line, "\n");
-	while (tok != NULL) {
-		if (strcmp(tok, "-") != 0) {
-			*pool = malloc((strlen(tok) + 1) * sizeof(char));
-			strcpy(*pool, tok);
-			ret = 0;
-			break;
-		}
-		tok = strtok(NULL, "\n");
-	}
-	free(line);
-
+	ret = zfs_get_bootfs(rpool, pool);
 	if (rpool != NULL) {
 		free(rpool);
 	}
