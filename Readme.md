@@ -30,7 +30,7 @@ tank/root@snap
 tank/root/etc
 tank/root/etc@snap
 ```
-- When booting, the following datasets are created:
+- When booting, the following datasets are created (**they get deleted before creating if they exist**):
 ```
 tank/root_initrd_snap
 tank/root_initrd_snap/etc
