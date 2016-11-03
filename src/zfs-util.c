@@ -171,7 +171,7 @@ int zfs_get_bootfs(char *rpool, char **bootfs) {
 	int status;
 	char **cmdline;
 	char *tok;
-	char *line;
+	char *line = NULL;
 
 	if (rpool == NULL) {
 		cmdline = (char*[]) { ZPOOL_CMD, "list", "-Ho", "bootfs", NULL };
@@ -217,6 +217,42 @@ int zfs_list_datasets_with_mp(char *dataset, char **datasets) {
 	return status;
 }
 
+int zfs_list_snapshots(char *dataset, char *snapshot, char **output) {
+	int status;
+	char *snaps = NULL;
+	char *cmdline[] = { ZFS_CMD, "list", "-Ho", "name", "-tsnapshot", "-r", dataset, NULL };
+	char *suffix;
+	char *tok;
+
+	status = executeZfs(1, &snaps, cmdline);
+	if (status != 0) {
+		fprintf(stderr, "zfs returned %d\n", status);
+		return status;
+	}
+	// Filter
+	suffix = malloc((strlen(snapshot) + 2) * sizeof(char));
+	strcpy(suffix, "@");
+	strcat(suffix, snapshot);
+
+	*output = malloc(sizeof(char));
+	strcpy(*output, "");
+
+	tok = strtok(snaps, "\n");
+	while (tok != NULL) {
+		if (strlen(tok) < strlen(suffix)) {
+			continue;
+		}
+		if (strncmp(tok + strlen(tok) - strlen(suffix), suffix, strlen(suffix)) == 0) {
+			*output = realloc(*output, strlen(*output) + strlen(tok) + 2);
+			strcat(*output, tok);
+			strcat(*output, "\n");
+		}
+		tok = strtok(NULL, "\n");
+	}
+	free(snaps);
+	return 0;
+}
+
 int zfs_mount(char *what, char *where, char *options) {
 	char **cmdline;
 
@@ -227,4 +263,52 @@ int zfs_mount(char *what, char *where, char *options) {
 	}
 
 	return executeMount(0, NULL, cmdline);
+}
+
+int zfs_get_mountpoint(char *dataset, char **mountpoint) {
+	int status;
+	char *cmdline[] = { ZFS_CMD, "get", "-Ho", "value", "mountpoint", dataset, NULL };
+
+	status = executeZfs(1, mountpoint, cmdline);
+	if (status != 0) {
+		fprintf(stderr, "zfs returned %d\n", status);
+	}
+	if (*mountpoint != NULL) {
+		(*mountpoint)[strlen(*mountpoint) - 1] = '\0';
+	}
+	return status;
+}
+
+int zfs_clone_snap(char *snapshot, char *datasetTarget, char *mountpoint) {
+	int status;
+	char **cmdline;
+	char *mountpointParam;
+
+	mountpointParam = malloc((strlen("org.zol:mountpoint=") + strlen(mountpoint) + 1) * sizeof(char));
+	strcpy(mountpointParam, "org.zol:mountpoint=");
+	strcat(mountpointParam, mountpoint);
+
+	cmdline = (char*[]) { ZFS_CMD, "clone",
+		"-o", "canmount=noauto",
+		"-o", "mountpoint=none",
+		"-o", mountpointParam, snapshot, datasetTarget, NULL };
+
+	status = executeZfs(0, NULL, cmdline);
+	free(mountpointParam);
+	if (status != 0) {
+		fprintf(stderr, "zfs returned %d\n", status);
+	}
+
+	return status;
+}
+
+int zfs_get_alt_mp(char *dataset, char **mountpoint) {
+	int status;
+	char *cmdline[] = { ZFS_CMD, "get", "-Ho", "value", "org.zol:mountpoint", dataset, NULL };
+
+	status = executeZfs(1, mountpoint, cmdline);
+	if (*mountpoint != NULL) {
+		(*mountpoint)[strlen(*mountpoint) - 1] = '\0';
+	}
+	return status;
 }

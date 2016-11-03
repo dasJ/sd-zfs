@@ -26,7 +26,7 @@ int handleBootfs(char **pool) {
 }
 
 int main(int argc, char *argv[]) {
-	char *dataset;
+	char *dataset = NULL;
 	char *mountpoint = NULL;
 	char *options = NULL;
 	// For parameter parsing
@@ -36,6 +36,12 @@ int main(int argc, char *argv[]) {
 	// For snapshotting
 	int ret;
 	char *snapDS = NULL;
+	char *snapMP = NULL;
+	char *snapBase;
+	char *snapPath;
+	char *snaps;
+	char *snapshot;
+	char *at;
 	// For mounting
 	char *snap;
 	char *lines = NULL;
@@ -44,6 +50,7 @@ int main(int argc, char *argv[]) {
 	char *mountpointToken;
 	char *what;
 	char *where;
+	char *where_tmp = NULL;
 
 	// Parse parameters
 	if (argc < 3) {
@@ -142,8 +149,48 @@ int main(int argc, char *argv[]) {
 				goto aftersnap;
 			}
 		}
-		// TODO Create new datasets from snapshots
-		// TODO Boot to new dataset
+		// Create new datasets
+		ret = zfs_list_snapshots(dataset, snap, &snaps);
+		if (ret != 0) {
+			fprintf(stderr, "Error while trying to list snapshots\n");
+			goto aftersnap;
+		}
+		snapshot = strtok(snaps, "\n");
+		while (snapshot != NULL) {
+			snapPath = malloc((strlen(snapDS) + strlen(&snapshot[strlen(dataset)] + 1) * sizeof(char)));
+			strcpy(snapPath, snapDS);
+			strcat(snapPath, &(snapshot[strlen(dataset)]));
+			at = strrchr(snapPath, '@');
+			if (at != 0) {
+				*at = '\0';
+			}
+			snapBase = malloc((strlen(snapshot) + 1) * sizeof(char));
+			strcpy(snapBase, snapshot);
+			at = strrchr(snapBase, '@');
+			if (at != 0) {
+				*at = '\0';
+			}
+			snapMP = NULL;
+			if (zfs_get_mountpoint(snapBase, &snapMP) != 0) {
+				fprintf(stderr, "Can not get mountpoint of snapshot\n");
+				goto aftersnap;
+			}
+
+			if (strcmp(snapMP, "/") == 0) {
+				free(dataset);
+				dataset = malloc((strlen(snapPath) + 1) * sizeof(char));
+				strcpy(dataset, snapPath);
+			}
+
+			if (zfs_clone_snap(snapshot, snapPath, snapMP) != 0) {
+				fprintf(stderr, "Can not clone snapshot to dataset\n");
+				free(snapPath);
+				goto aftersnap;
+			}
+			free(snapPath);
+
+			snapshot = strtok(NULL, "\n");
+		}
 	}
 aftersnap:
 	if (snapDS != NULL) {
@@ -164,15 +211,24 @@ aftersnap:
 	while (lineToken != NULL) {
 		what = strtok_r(lineToken, "\t", &mountpointToken);
 		// Do not mount what we don't need to mount
-		if (strcmp(mountpointToken, "-") == 0 || strcmp(mountpointToken, "legacy") == 0) {
-			goto loopend;
+		if (strcmp(mountpointToken, "-") == 0 || strcmp(mountpointToken, "legacy") == 0 || strcmp(mountpointToken, "none") == 0) {
+			if (zfs_get_alt_mp(what, &where_tmp) != 0) {
+				goto loopend;
+			}
+			if (strcmp(where_tmp, "-") == 0 || strcmp(where_tmp, "legacy") == 0 || strcmp(where_tmp, "none") == 0) {
+				goto loopend;
+			}
 		}
 		// Build where to mount
-		where = malloc((strlen(mountpoint) + strlen(mountpointToken) + 1) * sizeof(char));
+		where = malloc((strlen(mountpoint) + strlen((where_tmp == NULL) ? mountpointToken : where_tmp) + 1) * sizeof(char));
 		strcpy(where, mountpoint);
-		strcat(where, mountpointToken);
+		strcat(where, (where_tmp == NULL) ? mountpointToken : where_tmp);
 		// Mount
 		ret = zfs_mount(what, where, options);
+		if (where_tmp != NULL) {
+			free(where_tmp);
+			where_tmp = NULL;
+		}
 		if (ret != 0) {
 			fprintf(stderr, "ZFS command failed with exit code %d, bailing out\n", ret);
 			free(where);

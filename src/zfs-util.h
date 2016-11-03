@@ -48,10 +48,44 @@ int zfs_get_bootfs(char *rpool, char **bootfs);
 int zfs_list_datasets_with_mp(char *dataset, char **datasets);
 
 /*
+ * Lists all snapshots of a dataset with a given name.
+ * Returns 0 if everything went okay.
+ * The snapshot names are newline-separated.
+ *
+ * Ex. with tank/root and snap1
+ * tank/root@snap1
+ * tank/root/home@snap1
+ * tank/root/var@snap1
+ */
+int zfs_list_snapshots(char *dataset, char *snapshot, char **output);
+
+/*
  * Mounts what at where with specified options.
  * Options may be NULL.
  * Returns the return code of the mount command.
  */
 int zfs_mount(char *what, char *where, char *options);
+
+/*
+ * Returns the mountpoint of any dataset.
+ * Dataset must be imported.
+ * Returns the return code of the ZFS command (0 = okay).
+ * mountpoint must be NULL
+ */
+int zfs_get_mountpoint(char *dataset, char **mountpoint);
+
+/*
+ * Clones a snapshot to a dataset and sets org.zfs:mountpoint to the mountpoint.
+ * Returns 0 = okay
+ */
+int zfs_clone_snap(char *snapshot, char *datasetTarget, char *mountpoint);
+
+/*
+ * Returns the org.zol:mountpoint of any dataset.
+ * Dataset must be imported.
+ * Returns the return code of the ZFS command (0 = okay).
+ * mountpoint must be NULL
+ */
+int zfs_get_alt_mp(char *dataset, char **mountpoint);
 
 #endif /* ZFS_UTIL_H */
