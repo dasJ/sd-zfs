@@ -1,2 +1,3 @@
-mount.zfs_member
-zfs-getforce
+/mount.initrd_zfs
+/zfs-shutdown
+/initrd-zfs-generator
