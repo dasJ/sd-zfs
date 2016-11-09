@@ -28,7 +28,7 @@ int getRootOptions(char **options) {
 		optionsval = malloc((strlen("zfsutil") + 1) * sizeof(char));
 		strcpy(optionsval, "zfsutil");
 	} else if (ret != 0) {
-		fprintf(stderr, "Unknown thing happened while reading the rootflags= paremter\n");
+		fprintf(stderr, "Unknown thing happened while reading the rootflags= paramter\n");
 		return 2;
 	}
 	len = strlen(optionsval) + 1;
@@ -138,12 +138,11 @@ int generateScanUnit(char *directory, const char *targetName, const char *unitNa
 	// Check if unit already exists
 	if (access(unitpath, R_OK) != -1) {
 		free(unitpath);
-		printf("Scanning unit file already exists\n");
+		perror("Scanning unit file already exists or cannot be accessed\n");
 		return 0;
 	}
 	// Check if we need to ignore the cache file
 	if (ignoreCache == 0) {
-		// Wir möchten die Zeile
 		cacheLine = malloc((strlen("ConditionPathExists=!/etc/zfs/zpool.cache") + 1) * sizeof(char));
 		strcpy(cacheLine, "ConditionPathExists=!/etc/zfs/zpool.cache");
 	} else {
@@ -155,7 +154,7 @@ int generateScanUnit(char *directory, const char *targetName, const char *unitNa
 	if (fp == NULL) {
 		free(unitpath);
 		free(cacheLine);
-		fprintf(stderr, "Can not write to scanning unit file\n");
+		perror("Can not write to scanning unit file\n");
 		return 1;
 	}
 	fprintf(fp, "[Unit]\n\
@@ -208,7 +207,7 @@ int generateCacheUnit(char *directory, const char *targetName, const char *unitN
 	fp = fopen(unitpath, "w");
 	if (fp == NULL) {
 		free(unitpath);
-		fprintf(stderr, "Can not write to scanning unit file\n");
+		perror("Cannot write to scanning unit file\n");
 		return 1;
 	}
 	fprintf(fp, "[Unit]\n\
@@ -250,7 +249,7 @@ int generateSysrootUnit(char *directory, int bootfs, char *dataset, char *snapsh
 	// Check if unit already exists
 	if (access(unitpath, R_OK) != -1) {
 		free(unitpath);
-		printf("Mounting unit file already exists\n");
+		perror("Mounting unit file already exists\n");
 		return 0;
 	}
 
@@ -288,7 +287,7 @@ int generateSysrootUnit(char *directory, int bootfs, char *dataset, char *snapsh
 		free(unitpath);
 		free(options);
 		free(what);
-		fprintf(stderr, "Can not write to mounting unit file\n");
+		perror("Can not write to mounting unit file\n");
 		return 1;
 	}
 	fprintf(fp, "[Mount]\n\
