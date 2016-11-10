@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
 	char *snapshot;
 	char *at;
 	// For mounting
-	char *snap;
+	char *snap = NULL;
 	char *lines = NULL;
 	char *endLine;
 	char *lineToken;
