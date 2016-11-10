@@ -19,9 +19,7 @@ int handleBootfs(char **pool) {
 	}
 
 	ret = zfs_get_bootfs(rpool, pool);
-	if (rpool != NULL) {
-		free(rpool);
-	}
+	free(rpool);
 	return ret;
 }
 
@@ -70,9 +68,8 @@ int main(int argc, char *argv[]) {
 			}
 			strcat(newoptions, argv[i]);
 			strcat(newoptions, ",");
-			if (options != NULL) {
-				free(options);
-			}
+			free(options);
+
 			options = newoptions;
 			isOption = 0;
 			continue;
@@ -119,9 +116,7 @@ int main(int argc, char *argv[]) {
 			free(dataset);
 			dataset = NULL;
 			free(mountpoint);
-			if (options != NULL) {
-				free(options);
-			}
+			free(options);
 		}
 	}
 
@@ -194,9 +189,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 aftersnap:
-	if (snapDS != NULL) {
-		free(snapDS);
-	}
+	free(snapDS);
 
 	// Mount the dataset(s)
 	ret = zfs_list_datasets_with_mp(dataset, &lines);
@@ -204,9 +197,7 @@ aftersnap:
 		free(dataset);
 		dataset = NULL;
 		free(mountpoint);
-		if (options != NULL) {
-			free(options);
-		}
+		free(options);
 	}
 
 	lineToken = strtok_r(lines, "\n", &endLine);
@@ -227,10 +218,10 @@ aftersnap:
 		strcat(where, (where_tmp == NULL) ? mountpointToken : where_tmp);
 		// Mount
 		ret = zfs_mount(what, where, options);
-		if (where_tmp != NULL) {
-			free(where_tmp);
-			where_tmp = NULL;
-		}
+
+		free(where_tmp);
+		where_tmp = NULL;
+
 		if (ret != 0) {
 			fprintf(stderr, "ZFS command failed with exit code %d, bailing out\n", ret);
 			free(where);
@@ -243,10 +234,7 @@ loopend:
 	}
 
 	free(lines);
-	
 	free(dataset);
 	free(mountpoint);
-	if (options != NULL) {
-		free(options);
-	}
+	free(options);
 }
