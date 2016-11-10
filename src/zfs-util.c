@@ -39,7 +39,7 @@ int execute(char *command, char needOutput, char **output, char *param[]) {
 		execv(command, param);
 		exit(254);
 	} else if (pid < 0) {
-		fprintf(stderr, "Can not fork\n");
+		perror("Can not fork\n");
 		close(pip[0]);
 		close(pip[1]);
 		return pid;
