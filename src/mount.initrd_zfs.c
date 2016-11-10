@@ -157,7 +157,7 @@ int main(int argc, char *argv[]) {
 		}
 		snapshot = strtok(snaps, "\n");
 		while (snapshot != NULL) {
-			snapPath = malloc((strlen(snapDS) + strlen(&snapshot[strlen(dataset)] + 1) * sizeof(char)));
+			snapPath = malloc((strlen(snapDS) + strlen(&snapshot[strlen(dataset)]) + 1) * sizeof(char));
 			strcpy(snapPath, snapDS);
 			strcat(snapPath, &(snapshot[strlen(dataset)]));
 			at = strrchr(snapPath, '@');
