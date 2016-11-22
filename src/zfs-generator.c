@@ -144,9 +144,9 @@ int generateScanUnit(char *directory, const char *targetName, const char *unitNa
 	symlink(unitName, targetpath);
 	// Check if unit already exists
 	if (access(unitpath, R_OK) != -1) {
+		perror("Scanning unit file already exists or cannot be accessed\n");
 		free(unitpath);
 		free(targetpath);
-		perror("Scanning unit file already exists or cannot be accessed\n");
 		return 0;
 	}
 	// Check if we need to ignore the cache file
@@ -160,10 +160,10 @@ int generateScanUnit(char *directory, const char *targetName, const char *unitNa
 	// Write
 	fp = fopen(unitpath, "w");
 	if (fp == NULL) {
+		perror("Can not write to scanning unit file\n");
 		free(unitpath);
 		free(cacheLine);
 		free(targetpath);
-		perror("Can not write to scanning unit file\n");
 		return 1;
 	}
 	fprintf(fp, "[Unit]\n\
@@ -222,9 +222,9 @@ int generateCacheUnit(char *directory, const char *targetName, const char *unitN
 	// Write
 	fp = fopen(unitpath, "w");
 	if (fp == NULL) {
+		perror("Cannot write to scanning unit file\n");
 		free(unitpath);
 		free(targetpath);
-		perror("Cannot write to scanning unit file\n");
 		return 1;
 	}
 	fprintf(fp, "[Unit]\n\
@@ -270,8 +270,8 @@ int generateSysrootUnit(char *directory, int bootfs, char *dataset, char *snapsh
 	strcat(unitpath, unitName);
 	// Check if unit already exists
 	if (access(unitpath, R_OK) != -1) {
-		free(unitpath);
 		perror("Mounting unit file already exists\n");
+		free(unitpath);
 		return 0;
 	}
 
@@ -307,10 +307,10 @@ int generateSysrootUnit(char *directory, int bootfs, char *dataset, char *snapsh
 	// Write
 	fp = fopen(unitpath, "w");
 	if (fp == NULL) {
+		perror("Can not write to mounting unit file\n");
 		free(unitpath);
 		free(options);
 		free(what);
-		perror("Can not write to mounting unit file\n");
 		return 1;
 	}
 	fprintf(fp, "[Mount]\n\
