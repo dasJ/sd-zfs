@@ -97,6 +97,11 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Call like: %s <dataset> <mount_point> [-o option[,...]]\n", argv[0]);
 		exit(1);
 	}
+	// Check if all parameters are supplied
+	if (dataset == NULL || mountpoint == NULL) {
+		fprintf(stderr, "Call like: %s <dataset> <mount_point> [-o option[,...]]\n", argv[0]);
+		exit(1);
+	}
 	// Get rid of the trailing comma
 	if (options != NULL) {
 		newoptions = malloc(sizeof(options) - sizeof(char));
