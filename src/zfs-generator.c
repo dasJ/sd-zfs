@@ -86,6 +86,7 @@ int getForce(char **forceParam) {
 		*forceParam = malloc(4 * sizeof(char));
 		strcpy(*forceParam, " -f");
 	}
+	free(forceval);
 	return 0;
 }
 
@@ -138,6 +139,7 @@ int generateScanUnit(char *directory, const char *targetName, const char *unitNa
 	// Check if unit already exists
 	if (access(unitpath, R_OK) != -1) {
 		free(unitpath);
+		free(targetpath);
 		perror("Scanning unit file already exists or cannot be accessed\n");
 		return 0;
 	}
@@ -154,6 +156,7 @@ int generateScanUnit(char *directory, const char *targetName, const char *unitNa
 	if (fp == NULL) {
 		free(unitpath);
 		free(cacheLine);
+		free(targetpath);
 		perror("Can not write to scanning unit file\n");
 		return 1;
 	}
@@ -174,6 +177,7 @@ ExecStart=/usr/bin/zpool import %s -N -o cachefile=none%s\n", cacheLine, poolNam
 
 	free(cacheLine);
 	free(unitpath);
+	free(targetpath);
 	return 0;
 }
 
@@ -200,6 +204,7 @@ int generateCacheUnit(char *directory, const char *targetName, const char *unitN
 	// Check if unit already exists
 	if (access(unitpath, R_OK) != -1) {
 		free(unitpath);
+		free(targetpath);
 		printf("Caching unit file already exists\n");
 		return 0;
 	}
@@ -207,6 +212,7 @@ int generateCacheUnit(char *directory, const char *targetName, const char *unitN
 	fp = fopen(unitpath, "w");
 	if (fp == NULL) {
 		free(unitpath);
+		free(targetpath);
 		perror("Cannot write to scanning unit file\n");
 		return 1;
 	}
@@ -225,6 +231,7 @@ RemainAfterExit=yes\n\
 ExecStart=/usr/bin/zpool import %s -N -c /etc/zfs/zpool.cache%s\n", poolName, forceParam);
 	fclose(fp);
 	free(unitpath);
+	free(targetpath);
 
 	return 0;
 }
@@ -278,6 +285,7 @@ int generateSysrootUnit(char *directory, int bootfs, char *dataset, char *snapsh
 	if (getRootOptions(&options) != 0) {
 		fprintf(stderr, "Can not get root options\n");
 		free(what);
+		free(unitpath);
 		return 1;
 	}
 

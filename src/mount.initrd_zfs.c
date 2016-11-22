@@ -114,9 +114,9 @@ int main(int argc, char *argv[]) {
 		if (handleBootfs(&dataset) != 0) {
 			fprintf(stderr, "Can not get bootfs value\n");
 			free(dataset);
-			dataset = NULL;
 			free(mountpoint);
 			free(options);
+			exit(1);
 		}
 	}
 
@@ -195,9 +195,9 @@ aftersnap:
 	ret = zfs_list_datasets_with_mp(dataset, &lines);
 	if (ret != 0) {
 		free(dataset);
-		dataset = NULL;
 		free(mountpoint);
 		free(options);
+		exit(1);
 	}
 
 	lineToken = strtok_r(lines, "\n", &endLine);

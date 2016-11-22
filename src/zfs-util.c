@@ -33,15 +33,20 @@ int execute(char *command, char needOutput, char **output, char *param[]) {
 		close(2);
 		if (needOutput == 1) {
 			close(pip[0]);
-			dup(pip[1]);
+			if (dup(pip[1]) < 0) {
+				perror("Can not duplicate pipe\n");
+				close(pip[1]);
+			}
 		}
 		// Execute
 		execv(command, param);
 		exit(254);
 	} else if (pid < 0) {
 		perror("Can not fork\n");
-		close(pip[0]);
-		close(pip[1]);
+		if (needOutput == 1) {
+			close(pip[0]);
+			close(pip[1]);
+		}
 		return pid;
 	}
 	if (needOutput == 1) {
@@ -249,6 +254,7 @@ int zfs_list_snapshots(char *dataset, char *snapshot, char **output) {
 		}
 		tok = strtok(NULL, "\n");
 	}
+	free(suffix);
 	free(snaps);
 	return 0;
 }
