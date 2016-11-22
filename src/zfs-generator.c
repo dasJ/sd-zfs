@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -131,7 +132,12 @@ int generateScanUnit(char *directory, const char *targetName, const char *unitNa
 	strcat(unitpath, "/");
 	strcat(unitpath, unitName);
 	// Make wants directory
-	mkdir(targetpath, 0775);
+	if (mkdir(targetpath, 0775) < 0 && errno != EEXIST) {
+		perror("Can not create unit directory\n");
+		free(targetpath);
+		free(unitpath);
+		return(1);
+	}
 	// Make symlink
 	strcat(targetpath, "/");
 	strcat(targetpath, unitName);
@@ -196,7 +202,12 @@ int generateCacheUnit(char *directory, const char *targetName, const char *unitN
 	strcat(unitpath, "/");
 	strcat(unitpath, unitName);
 	// Make wants directory
-	mkdir(targetpath, 0775);
+	if (mkdir(targetpath, 0775) < 0 && errno != EEXIST) {
+		perror("Can not create unit directory\n");
+		free(targetpath);
+		free(unitpath);
+		return(1);
+	}
 	// Make symlink
 	strcat(targetpath, "/");
 	strcat(targetpath, unitName);
@@ -250,7 +261,11 @@ int generateSysrootUnit(char *directory, int bootfs, char *dataset, char *snapsh
 	strcat(unitpath, "/");
 	strcat(unitpath, targetName);
 	// Make dropin directory
-	mkdir(unitpath, 0775);
+	if (mkdir(unitpath, 0775) < 0 && errno != EEXIST) {
+		perror("Can not create unit directory\n");
+		free(unitpath);
+		return(1);
+	}
 	strcat(unitpath, "/");
 	strcat(unitpath, unitName);
 	// Check if unit already exists
