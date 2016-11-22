@@ -21,6 +21,7 @@ int execute(char *command, char needOutput, char **output, char *param[]) {
 	char *linebuffer;
 	size_t size;
 	int nRead;
+	int fd;
 
 	// Execute
 	if (needOutput == 1) {
@@ -33,13 +34,15 @@ int execute(char *command, char needOutput, char **output, char *param[]) {
 		close(2);
 		if (needOutput == 1) {
 			close(pip[0]);
-			if (dup(pip[1]) < 0) {
+			fd = dup(pip[1]);
+			if (fd < 0) {
 				perror("Can not duplicate pipe\n");
 				close(pip[1]);
 			}
 		}
 		// Execute
 		execv(command, param);
+		close(fd);
 		exit(254);
 	} else if (pid < 0) {
 		perror("Can not fork\n");
