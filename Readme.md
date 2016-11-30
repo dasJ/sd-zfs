@@ -7,7 +7,7 @@ You are expected to already have a root filesystem on a ZFS dataset.
 Please note that legacy root mounts are not supported because they are legacy technology (as the name implies).
 
 ## Functionality
-- Boot from any ZFS dataset
+- Boot from any ZFS dataset. All subdatasets are mounted as well
 - Use `bootfs` to decide what dataset to use
 - Use zpool.cache for pool caching (can be overridden)
 - Included udev rules for importing by vdev
