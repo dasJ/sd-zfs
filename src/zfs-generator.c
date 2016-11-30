@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,7 +29,7 @@ int getRootOptions(char **options) {
 		optionsval = malloc((strlen("zfsutil") + 1) * sizeof(char));
 		strcpy(optionsval, "zfsutil");
 	} else if (ret != 0) {
-		fprintf(stderr, "Unknown thing happened while reading the rootflags= paremter\n");
+		fprintf(stderr, "Unknown thing happened while reading the rootflags= paramter\n");
 		return 2;
 	}
 	len = strlen(optionsval) + 1;
@@ -86,6 +87,7 @@ int getForce(char **forceParam) {
 		*forceParam = malloc(4 * sizeof(char));
 		strcpy(*forceParam, " -f");
 	}
+	free(forceval);
 	return 0;
 }
 
@@ -130,20 +132,25 @@ int generateScanUnit(char *directory, const char *targetName, const char *unitNa
 	strcat(unitpath, "/");
 	strcat(unitpath, unitName);
 	// Make wants directory
-	mkdir(targetpath, 0775);
+	if (mkdir(targetpath, 0775) < 0 && errno != EEXIST) {
+		perror("Can not create unit directory\n");
+		free(targetpath);
+		free(unitpath);
+		return(1);
+	}
 	// Make symlink
 	strcat(targetpath, "/");
 	strcat(targetpath, unitName);
 	symlink(unitName, targetpath);
 	// Check if unit already exists
 	if (access(unitpath, R_OK) != -1) {
+		perror("Scanning unit file already exists or cannot be accessed\n");
 		free(unitpath);
-		printf("Scanning unit file already exists\n");
+		free(targetpath);
 		return 0;
 	}
 	// Check if we need to ignore the cache file
 	if (ignoreCache == 0) {
-		// Wir möchten die Zeile
 		cacheLine = malloc((strlen("ConditionPathExists=!/etc/zfs/zpool.cache") + 1) * sizeof(char));
 		strcpy(cacheLine, "ConditionPathExists=!/etc/zfs/zpool.cache");
 	} else {
@@ -153,9 +160,10 @@ int generateScanUnit(char *directory, const char *targetName, const char *unitNa
 	// Write
 	fp = fopen(unitpath, "w");
 	if (fp == NULL) {
+		perror("Can not write to scanning unit file\n");
 		free(unitpath);
 		free(cacheLine);
-		fprintf(stderr, "Can not write to scanning unit file\n");
+		free(targetpath);
 		return 1;
 	}
 	fprintf(fp, "[Unit]\n\
@@ -175,6 +183,7 @@ ExecStart=/usr/bin/zpool import %s -N -o cachefile=none%s\n", cacheLine, poolNam
 
 	free(cacheLine);
 	free(unitpath);
+	free(targetpath);
 	return 0;
 }
 
@@ -193,7 +202,12 @@ int generateCacheUnit(char *directory, const char *targetName, const char *unitN
 	strcat(unitpath, "/");
 	strcat(unitpath, unitName);
 	// Make wants directory
-	mkdir(targetpath, 0775);
+	if (mkdir(targetpath, 0775) < 0 && errno != EEXIST) {
+		perror("Can not create unit directory\n");
+		free(targetpath);
+		free(unitpath);
+		return(1);
+	}
 	// Make symlink
 	strcat(targetpath, "/");
 	strcat(targetpath, unitName);
@@ -201,14 +215,16 @@ int generateCacheUnit(char *directory, const char *targetName, const char *unitN
 	// Check if unit already exists
 	if (access(unitpath, R_OK) != -1) {
 		free(unitpath);
+		free(targetpath);
 		printf("Caching unit file already exists\n");
 		return 0;
 	}
 	// Write
 	fp = fopen(unitpath, "w");
 	if (fp == NULL) {
+		perror("Cannot write to scanning unit file\n");
 		free(unitpath);
-		fprintf(stderr, "Can not write to scanning unit file\n");
+		free(targetpath);
 		return 1;
 	}
 	fprintf(fp, "[Unit]\n\
@@ -226,6 +242,7 @@ RemainAfterExit=yes\n\
 ExecStart=/usr/bin/zpool import %s -N -c /etc/zfs/zpool.cache%s\n", poolName, forceParam);
 	fclose(fp);
 	free(unitpath);
+	free(targetpath);
 
 	return 0;
 }
@@ -244,13 +261,17 @@ int generateSysrootUnit(char *directory, int bootfs, char *dataset, char *snapsh
 	strcat(unitpath, "/");
 	strcat(unitpath, targetName);
 	// Make dropin directory
-	mkdir(unitpath, 0775);
+	if (mkdir(unitpath, 0775) < 0 && errno != EEXIST) {
+		perror("Can not create unit directory\n");
+		free(unitpath);
+		return(1);
+	}
 	strcat(unitpath, "/");
 	strcat(unitpath, unitName);
 	// Check if unit already exists
 	if (access(unitpath, R_OK) != -1) {
+		perror("Mounting unit file already exists\n");
 		free(unitpath);
-		printf("Mounting unit file already exists\n");
 		return 0;
 	}
 
@@ -279,16 +300,17 @@ int generateSysrootUnit(char *directory, int bootfs, char *dataset, char *snapsh
 	if (getRootOptions(&options) != 0) {
 		fprintf(stderr, "Can not get root options\n");
 		free(what);
+		free(unitpath);
 		return 1;
 	}
 
 	// Write
 	fp = fopen(unitpath, "w");
 	if (fp == NULL) {
+		perror("Can not write to mounting unit file\n");
 		free(unitpath);
 		free(options);
 		free(what);
-		fprintf(stderr, "Can not write to mounting unit file\n");
 		return 1;
 	}
 	fprintf(fp, "[Mount]\n\

@@ -21,6 +21,7 @@ int execute(char *command, char needOutput, char **output, char *param[]) {
 	char *linebuffer;
 	size_t size;
 	int nRead;
+	int fd;
 
 	// Execute
 	if (needOutput == 1) {
@@ -33,15 +34,22 @@ int execute(char *command, char needOutput, char **output, char *param[]) {
 		close(2);
 		if (needOutput == 1) {
 			close(pip[0]);
-			dup(pip[1]);
+			fd = dup(pip[1]);
+			if (fd < 0) {
+				perror("Can not duplicate pipe\n");
+				close(pip[1]);
+			}
 		}
 		// Execute
 		execv(command, param);
+		close(fd);
 		exit(254);
 	} else if (pid < 0) {
-		fprintf(stderr, "Can not fork\n");
-		close(pip[0]);
-		close(pip[1]);
+		perror("Can not fork\n");
+		if (needOutput == 1) {
+			close(pip[0]);
+			close(pip[1]);
+		}
 		return pid;
 	}
 	if (needOutput == 1) {
@@ -249,6 +257,7 @@ int zfs_list_snapshots(char *dataset, char *snapshot, char **output) {
 		}
 		tok = strtok(NULL, "\n");
 	}
+	free(suffix);
 	free(snaps);
 	return 0;
 }

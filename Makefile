@@ -12,16 +12,16 @@ generator: $(GENERATOR_OUT)
 
 shutdown: $(SHUTDOWN_OUT)
 
-$(MOUNT_OUT): src/mount.initrd_zfs.c src/zfs-util.c src/zfs-util.h
+$(MOUNT_OUT): src/mount.initrd_zfs.c src/zfs-util.c
 	$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $^
 
-$(GENERATOR_OUT): src/zfs-generator.c src/cmdline.c src/cmdline.h
+$(GENERATOR_OUT): src/zfs-generator.c src/cmdline.c
 	$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $^
 
 $(SHUTDOWN_OUT): src/zfs-shutdown.c
 	$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $^
 
 clean:
-	$(RM) $(MOUNT_OUT) $(ZFS_GENERATOR_OUT) $(ZFS_SHUTDOWN_OUT)
+	$(RM) $(MOUNT_OUT) $(GENERATOR_OUT) $(SHUTDOWN_OUT)
 
 .PHONY: all mount generator shutdown clean
