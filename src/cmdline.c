@@ -7,7 +7,7 @@ int getCmdline(char **cmdline) {
 	FILE *fd;
 	size_t linelen;
 
-	fd = fopen("/proc/cmdline", "r");
+	fd = fopen(CMDLINE_FILE, "r");
 	if (fd == NULL) {
 		perror("Cannot open kernel command line\n");
 		return -1;
