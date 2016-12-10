@@ -1,6 +1,30 @@
 #ifndef ZFS_UTIL_H
 #define ZFS_UTIL_H
 
+#ifndef ZFS_EXE
+#define ZFS_EXE "/usr/bin/zfs"
+#endif /* ZFS_EXE */
+
+#ifndef ZPOOL_EXE
+#define ZPOOL_EXE "/usr/bin/zpool"
+#endif /* ZPOOL_EXE */
+
+#ifndef MOUNT_EXE
+#define MOUNT_EXE "/usr/bin/mount"
+#endif /* MOUNT_EXE */
+
+#ifndef ZFS_CMD
+#define ZFS_CMD "zfs"
+#endif /* ZFS_CMD */
+
+#ifndef ZPOOL_CMD
+#define ZPOOL_CMD "zpool"
+#endif /* ZPOOL_CMD */
+
+#ifndef MOUNT_CMD
+#define MOUNT_CMD "mount"
+#endif /* MOUNT_CMD */
+
 /*
  * Removes a dataset from a pool including
  * all children datasets.

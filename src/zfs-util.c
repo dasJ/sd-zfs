@@ -7,12 +7,6 @@
 
 // Buffer for reading ZFS command output
 #define BUFSIZE 16
-#define ZFS_EXE "/usr/bin/zfs"
-#define ZPOOL_EXE "/usr/bin/zpool"
-#define MOUNT_EXE "/usr/bin/mount"
-#define ZFS_CMD "zfs"
-#define ZPOOL_CMD "zpool"
-#define MOUNT_CMD "mount"
 
 int execute(char *command, char needOutput, char **output, char *param[]) {
 	int pip[2];
