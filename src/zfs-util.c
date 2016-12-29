@@ -32,11 +32,12 @@ int execute(char *command, char needOutput, char **output, char *param[]) {
 			if (fd < 0) {
 				perror("Can not duplicate pipe\n");
 				close(pip[1]);
+			} else {
+				close(fd);
 			}
 		}
 		// Execute
 		execv(command, param);
-		close(fd);
 		exit(254);
 	} else if (pid < 0) {
 		perror("Can not fork\n");
