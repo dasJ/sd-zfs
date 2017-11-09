@@ -78,6 +78,7 @@ int getForce(char **forceParam) {
 		if (strcmp(forceval, "1") == 0) {
 			force = 1;
 		}
+		free(forceval);
 	}
 
 	if (force == 0) {
@@ -87,7 +88,6 @@ int getForce(char **forceParam) {
 		*forceParam = malloc(4 * sizeof(char));
 		strcpy(*forceParam, " -f");
 	}
-	free(forceval);
 	return 0;
 }
 
