@@ -98,7 +98,7 @@ int getIgnoreCache(char *ignore) {
 	char *ignoreval;
 	int ret;
 
-	ret = cmdline_getParam("zfs_ignorecache", &ignoreval);
+	ret = cmdline_getParam("zfs_ignorecache=", &ignoreval);
 	if (ret < 0) {
 		fprintf(stderr, "Could not get zfs_ignorecache= parameter. Error %d\n", ret);
 		return 1;
@@ -151,8 +151,8 @@ int generateScanUnit(char *directory, const char *targetName, const char *unitNa
 	}
 	// Check if we need to ignore the cache file
 	if (ignoreCache == 0) {
-		cacheLine = malloc((strlen("ConditionPathExists=!/etc/zfs/zpool.cache") + 1) * sizeof(char));
-		strcpy(cacheLine, "ConditionPathExists=!/etc/zfs/zpool.cache");
+		cacheLine = malloc((strlen("ConditionPathExists=!/etc/zfs/zpool.cache\n") + 1) * sizeof(char));
+		strcpy(cacheLine, "ConditionPathExists=!/etc/zfs/zpool.cache\n");
 	} else {
 		cacheLine = malloc(sizeof(char));
 		strcpy(cacheLine, "");
@@ -173,7 +173,7 @@ Requires=systemd-udev-settle.service\n\
 After=systemd-udev-settle.service\n\
 After=cryptsetup.target\n\
 Before=sysroot.mount\n\
-%s\n\
+%s\
 \n\
 [Service]\n\
 Type=oneshot\n\
