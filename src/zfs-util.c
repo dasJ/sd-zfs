@@ -25,7 +25,6 @@ int execute(char *command, char needOutput, char **output, char *param[]) {
 	if (pid == 0) {
 		// Set up pipe
 		close(1);
-		close(2);
 		if (needOutput == 1) {
 			close(pip[0]);
 			fd = dup(pip[1]);
