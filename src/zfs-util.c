@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,43 +16,51 @@ int execute(char *command, char needOutput, char **output, char *param[]) {
 	char *linebuffer;
 	size_t size;
 	int nRead;
-	int fd;
 
 	// Execute
 	if (needOutput == 1) {
-		pipe(pip);
+		if (pipe(pip) == -1) {
+			perror("Cannot create pipe\n");
+			exit(1);
+		}
 	}
 	pid = fork();
 	if (pid == 0) {
 		// Set up pipe
-		close(1);
 		if (needOutput == 1) {
-			close(pip[0]);
-			fd = dup(pip[1]);
-			if (fd < 0) {
-				perror("Can not duplicate pipe\n");
-				close(pip[1]);
-			} else {
-				close(fd);
+			// Redirect stdout to pipe
+			while ((dup2(pip[1], STDOUT_FILENO) == -1) && (errno == EINTR)) {}
+			if (errno != 0) {
+				perror("Cannot connect to parent pipe\n");
+				exit(1);
 			}
+			// Close pipe, we won't need it anymore
+			close(pip[0]);
+			close(pip[1]);
+		} else {
+			// Close stdout so it doesn't get written to the journal
+			close(1);
 		}
 		// Execute
 		execv(command, param);
 		exit(254);
 	} else if (pid < 0) {
-		perror("Can not fork\n");
+		perror("Cannot fork\n");
 		if (needOutput == 1) {
 			close(pip[0]);
 			close(pip[1]);
 		}
 		return pid;
 	}
+	// Capture output
 	if (needOutput == 1) {
+		// We don't need to write to the pipe
 		close(pip[1]);
 		// Read lines
 		linebuffer = malloc(BUFSIZE * sizeof(char));
 		while (1) {
 			while ((nRead = read(pip[0], linebuffer, BUFSIZE)) > 0) {
+				// Append buffer to output
 				if (*output == NULL) {
 					*output = malloc(nRead + 1);
 					memcpy(*output, linebuffer, nRead);
@@ -67,6 +76,7 @@ int execute(char *command, char needOutput, char **output, char *param[]) {
 				break;
 			}
 		}
+		close(pip[0]);
 		free(linebuffer);
 	}
 	// Wait for quit
