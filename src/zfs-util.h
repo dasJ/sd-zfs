@@ -112,4 +112,16 @@ int zfs_clone_snap(char *snapshot, char *datasetTarget, char *mountpoint);
  */
 int zfs_get_alt_mp(char *dataset, char **mountpoint);
 
+/*
+ * Checks if a dataset must be decrypted with password.
+ * Returns 1 when encryption is enabled and key must be typed in.
+ */
+int zfs_ds_requires_password(char *dataset);
+
+/*
+ * Asks for a password and decrypts the given dataset.
+ * Returns 1 when everything went fine.
+ */
+int zfs_decrypt_ds_with_password(char *dataset);
+
 #endif /* ZFS_UTIL_H */

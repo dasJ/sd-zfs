@@ -221,6 +221,13 @@ aftersnap:
 		where = malloc((strlen(mountpoint) + strlen((where_tmp == NULL) ? mountpointToken : where_tmp) + 1) * sizeof(char));
 		strcpy(where, mountpoint);
 		strcat(where, (where_tmp == NULL) ? mountpointToken : where_tmp);
+		// Decrypt
+		if (zfs_ds_requires_password(what)) {
+			if (!zfs_decrypt_ds_with_password(what)) {
+				fprintf(stderr, "Could not decrypt dataset %s\n", what);
+				break;
+			}
+		}
 		// Mount
 		ret = zfs_mount(what, where, options);
 
