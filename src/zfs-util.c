@@ -153,6 +153,18 @@ int executeZfs(char needOutput, char **output, char *param[]) {
 }
 
 /*
+ * Executes a zfs command, feeding it the input from a systemd password
+ * prompt to stdin.
+ * If needOutput is 1, the output of the command is written to output
+ * which will be allocated. It must be NULL when passing in.
+ * param must be a null-terminated array of parameters where the first
+ * is ZFS_CMD
+ */
+int executeZfsWithPassword(char needOutput, char **output, char *param[], char *prompt) {
+	return execute(ZFS_EXE, needOutput, output, param, 1, prompt);
+}
+
+/*
  * Executes a zpool command.
  * If needOutput is 1, the output of the command is written to output
  * which will be allocated. It must be NULL when passing in.
@@ -381,4 +393,53 @@ int zfs_get_alt_mp(char *dataset, char **mountpoint) {
 		(*mountpoint)[strlen(*mountpoint) - 1] = '\0';
 	}
 	return status;
+}
+
+int zfs_ds_requires_password(char *dataset) {
+	char *output = NULL;
+	char *cmdline[] = { ZFS_CMD, "get", "-Ho", "value", "encryption,keyformat", dataset, NULL };
+	char *status = NULL;
+	char *keytype = NULL;
+
+	if (executeZfs(1, &output, cmdline) != 0) {
+		return -1;
+	}
+
+	status = strtok(output, "\n");
+	if (strcmp(status, "off") != 0) {
+		keytype = strtok(NULL, "\n");
+		if (strcmp(keytype, "passphrase") == 0) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+int zfs_decrypt_ds_with_password(char *dataset) {
+	int ret;
+	char *encroot = NULL;
+	char **cmdline;
+	const char *promptMessage = "Enter passphrase for '%s':";
+	char *prompt;
+
+	cmdline = (char*[]) { ZFS_CMD, "get", "-Ho", "value", "encryptionroot", dataset, NULL };
+	if (executeZfs(1, &encroot, cmdline) != 0) {
+		return 0;
+	}
+
+	if (encroot != NULL) {
+		(encroot)[strlen(encroot) - 1] = '\0';
+	}
+
+	cmdline = (char*[]) { ZFS_CMD, "load-key", encroot, NULL };
+	prompt = (char*)malloc((strlen(promptMessage) - 2 + strlen(encroot)) * sizeof(char));
+	sprintf(prompt, promptMessage, encroot);
+
+	ret = executeZfsWithPassword(0, NULL, cmdline, prompt);
+	if (ret == 0) {
+		return 1;
+	} else {
+		return 0;
+	}
 }
