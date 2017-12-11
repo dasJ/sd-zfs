@@ -21,7 +21,7 @@ int execute(char *command, char needOutput, char **output, char *param[], char n
 	if (needPassword == 1) {
 		// Execute password prompt
 		if (pipe(pwpip) == -1) {
-			perror("Cannot create password pipe\n");
+			perror("Cannot create password pipe");
 			exit(1);
 		}
 		pwpid = fork();
@@ -29,7 +29,7 @@ int execute(char *command, char needOutput, char **output, char *param[], char n
 			// Redirect stdout to pipe
 			while ((dup2(pwpip[1], STDOUT_FILENO) == -1) && (errno == EINTR)) {}
 			if (errno != 0) {
-				perror("Cannot connect stdout to parent password pipe\n");
+				perror("Cannot connect stdout to parent password pipe");
 				exit(1);
 			}
 			// Close pipe, we won't need it anymore
@@ -45,7 +45,7 @@ int execute(char *command, char needOutput, char **output, char *param[], char n
 			execv(SYSTEMD_ASK_PASS_EXE, cmdline);
 			exit(254);
 		} else if (pwpid < 0) {
-			perror("Cannot fork\n");
+			perror("Cannot fork");
 			close(pwpip[0]);
 			close(pwpip[1]);
 			return pwpid;
@@ -55,7 +55,7 @@ int execute(char *command, char needOutput, char **output, char *param[], char n
 	// Execute
 	if (needOutput == 1) {
 		if (pipe(pip) == -1) {
-			perror("Cannot create output pipe\n");
+			perror("Cannot create output pipe");
 			exit(1);
 		}
 	}
@@ -65,7 +65,7 @@ int execute(char *command, char needOutput, char **output, char *param[], char n
 			// Redirect password pipe to stdin
 			while ((dup2(pwpip[0], STDIN_FILENO) == -1) && (errno == EINTR)) {}
 			if (errno != 0) {
-				perror("Cannot connect stdin to parent password pipe\n");
+				perror("Cannot connect stdin to parent password pipe");
 				exit(1);
 			}
 			// Close pipe, we won't need them anymore
@@ -77,7 +77,7 @@ int execute(char *command, char needOutput, char **output, char *param[], char n
 			// Redirect stdout to pipe
 			while ((dup2(pip[1], STDOUT_FILENO) == -1) && (errno == EINTR)) {}
 			if (errno != 0) {
-				perror("Cannot connect stdout to parent output pipe\n");
+				perror("Cannot connect stdout to parent output pipe");
 				exit(1);
 			}
 			// Close pipe, we won't need it anymore
@@ -91,7 +91,7 @@ int execute(char *command, char needOutput, char **output, char *param[], char n
 		execv(command, param);
 		exit(254);
 	} else if (pid < 0) {
-		perror("Cannot fork\n");
+		perror("Cannot fork");
 		if (needOutput == 1) {
 			close(pip[0]);
 			close(pip[1]);
