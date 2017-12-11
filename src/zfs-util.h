@@ -13,6 +13,10 @@
 #define MOUNT_EXE "/usr/bin/mount"
 #endif /* MOUNT_EXE */
 
+#ifndef SYSTEMD_ASK_PASS_EXE
+#define SYSTEMD_ASK_PASS_EXE "/usr/bin/systemd-ask-password"
+#endif /* SYSTEMD_ASK_PASS_EXE */
+
 #ifndef ZFS_CMD
 #define ZFS_CMD "zfs"
 #endif /* ZFS_CMD */
@@ -24,6 +28,10 @@
 #ifndef MOUNT_CMD
 #define MOUNT_CMD "mount"
 #endif /* MOUNT_CMD */
+
+#ifndef SYSTEMD_ASK_PASS_CMD
+#define SYSTEMD_ASK_PASS_CMD "systemd-ask-password"
+#endif /* SYSTEMD_ASK_PASS_CMD */
 
 /*
  * Removes a dataset from a pool including

@@ -21,12 +21,15 @@ build() {
 		zpool \
 		zfs \
 		modprobe \
+		systemd-ask-password \
 		/usr/lib/libgcc_s.so.1 \
 		/usr/lib/udev/vdev_id \
 		/usr/lib/udev/zvol_id
 
 	# units
 	add_systemd_unit systemd-udev-settle.service
+	add_systemd_unit systemd-ask-password-console.path
+	add_systemd_unit systemd-ask-password-console.service
 
 	# Our binaries
 	add_binary /usr/lib/mkinitcpio-sd-zfs/initrd-zfs-generator /usr/lib/systemd/system-generators/

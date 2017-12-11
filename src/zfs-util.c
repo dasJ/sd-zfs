@@ -9,29 +9,75 @@
 // Buffer for reading ZFS command output
 #define BUFSIZE 16
 
-int execute(char *command, char needOutput, char **output, char *param[]) {
-	int pip[2];
-	pid_t pid;
-	int status;
+int execute(char *command, char needOutput, char **output, char *param[], char needPassword, char *prompt) {
+	int pip[2], pwpip[2];
+	pid_t pid, pwpid;
+	int status, pwstatus;
 	char *linebuffer;
 	size_t size;
 	int nRead;
+	char **cmdline;
+
+	if (needPassword == 1) {
+		// Execute password prompt
+		if (pipe(pwpip) == -1) {
+			perror("Cannot create password pipe\n");
+			exit(1);
+		}
+		pwpid = fork();
+		if (pwpid == 0) {
+			// Redirect stdout to pipe
+			while ((dup2(pwpip[1], STDOUT_FILENO) == -1) && (errno == EINTR)) {}
+			if (errno != 0) {
+				perror("Cannot connect stdout to parent password pipe\n");
+				exit(1);
+			}
+			// Close pipe, we won't need it anymore
+			close(pwpip[1]);
+			// Close stdin to prevent weird redirection
+			close(0);
+			// Execute
+			if (prompt == NULL) {
+				cmdline = (char*[]) { SYSTEMD_ASK_PASS_CMD, NULL };
+			} else {
+				cmdline = (char*[]) { SYSTEMD_ASK_PASS_CMD, prompt, NULL };
+			}
+			execv(SYSTEMD_ASK_PASS_EXE, cmdline);
+			exit(254);
+		} else if (pwpid < 0) {
+			perror("Cannot fork\n");
+			close(pwpip[0]);
+			close(pwpip[1]);
+			return pwpid;
+		}
+	}
 
 	// Execute
 	if (needOutput == 1) {
 		if (pipe(pip) == -1) {
-			perror("Cannot create pipe\n");
+			perror("Cannot create output pipe\n");
 			exit(1);
 		}
 	}
 	pid = fork();
 	if (pid == 0) {
+		if (needPassword == 1) {
+			// Redirect password pipe to stdin
+			while ((dup2(pwpip[0], STDIN_FILENO) == -1) && (errno == EINTR)) {}
+			if (errno != 0) {
+				perror("Cannot connect stdin to parent password pipe\n");
+				exit(1);
+			}
+			// Close pipe, we won't need them anymore
+			close(pwpip[0]);
+		}
+
 		// Set up pipe
 		if (needOutput == 1) {
 			// Redirect stdout to pipe
 			while ((dup2(pip[1], STDOUT_FILENO) == -1) && (errno == EINTR)) {}
 			if (errno != 0) {
-				perror("Cannot connect to parent pipe\n");
+				perror("Cannot connect stdout to parent output pipe\n");
 				exit(1);
 			}
 			// Close pipe, we won't need it anymore
@@ -51,6 +97,11 @@ int execute(char *command, char needOutput, char **output, char *param[]) {
 			close(pip[1]);
 		}
 		return pid;
+	}
+	// Close out the password pipe
+	if (needPassword == 1) {
+		close(pwpip[0]);
+		close(pwpip[1]);
 	}
 	// Capture output
 	if (needOutput == 1) {
@@ -80,7 +131,13 @@ int execute(char *command, char needOutput, char **output, char *param[]) {
 		free(linebuffer);
 	}
 	// Wait for quit
+	if (needPassword == 1) {
+		waitpid(pwpid, &pwstatus, 0);
+	}
 	waitpid(pid, &status, 0);
+	if (needPassword == 1 && pwstatus != 0) {
+		return pwstatus;
+	}
 	return status;
 }
 
@@ -92,7 +149,7 @@ int execute(char *command, char needOutput, char **output, char *param[]) {
  * is ZFS_CMD
  */
 int executeZfs(char needOutput, char **output, char *param[]) {
-	return execute(ZFS_EXE, needOutput, output, param);
+	return execute(ZFS_EXE, needOutput, output, param, 0, NULL);
 }
 
 /*
@@ -103,7 +160,7 @@ int executeZfs(char needOutput, char **output, char *param[]) {
  * is ZPOOL_CMD
  */
 int executeZpool(char needOutput, char **output, char *param[]) {
-	return execute(ZPOOL_EXE, needOutput, output, param);
+	return execute(ZPOOL_EXE, needOutput, output, param, 0, NULL);
 }
 
 /*
@@ -114,7 +171,7 @@ int executeZpool(char needOutput, char **output, char *param[]) {
  * is MOUNT_CMD
  */
 int executeMount(char needOutput, char **output, char *param[]) {
-	return execute(MOUNT_EXE, needOutput, output, param);
+	return execute(MOUNT_EXE, needOutput, output, param, 0, NULL);
 }
 
 int zfs_destroy_recursively(char *dataset) {
