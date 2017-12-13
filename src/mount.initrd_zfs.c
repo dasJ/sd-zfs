@@ -205,7 +205,6 @@ aftersnap:
 		exit(1);
 	}
 
-	ret = -1;
 	lineToken = strtok_r(lines, "\n", &endLine);
 	while (lineToken != NULL) {
 		what = strtok_r(lineToken, "\t", &mountpointToken);
@@ -250,7 +249,4 @@ loopend:
 	free(dataset);
 	free(mountpoint);
 	free(options);
-	if (ret != 0) {
-		exit(1);
-	}
 }
