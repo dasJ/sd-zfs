@@ -209,18 +209,27 @@ aftersnap:
 	while (lineToken != NULL) {
 		what = strtok_r(lineToken, "\t", &mountpointToken);
 		// Do not mount what we don't need to mount
-		if (strcmp(mountpointToken, "-") == 0 || strcmp(mountpointToken, "legacy") == 0 || strcmp(mountpointToken, "none") == 0) {
+		if (strcmp(mountpointToken, "-") == 0 || strcmp(mountpointToken, "none") == 0) {
 			if (zfs_get_alt_mp(what, &where_tmp) != 0) {
 				goto loopend;
 			}
-			if (strcmp(where_tmp, "-") == 0 || strcmp(where_tmp, "legacy") == 0 || strcmp(where_tmp, "none") == 0) {
+			if (strcmp(where_tmp, "-") == 0 || strcmp(where_tmp, "none") == 0) {
 				goto loopend;
 			}
 		}
 		// Build where to mount
-		where = malloc((strlen(mountpoint) + strlen((where_tmp == NULL) ? mountpointToken : where_tmp) + 1) * sizeof(char));
-		strcpy(where, mountpoint);
-		strcat(where, (where_tmp == NULL) ? mountpointToken : where_tmp);
+		if (strcmp(what, dataset) == 0) {
+			// the rootfs dataset, mount directly to passed in mountpoint
+			where = malloc((strlen(mountpoint) + 1) * sizeof(char));
+			strcpy(where, mountpoint);
+		} else if (strcmp(mountpointToken, "legacy") != 0)  {
+			// a child of the rootfs dataset whose mountpoint != legacy, mount to
+			// the location set in its zfs mountpoint option.
+			where = malloc((strlen(mountpoint) + strlen((where_tmp == NULL) ? mountpointToken : where_tmp) + 1) * sizeof(char));
+			strcpy(where, mountpoint);
+			strcat(where, (where_tmp == NULL) ? mountpointToken : where_tmp);
+		}
+
 		// Mount
 		ret = zfs_mount(what, where, options);
 
