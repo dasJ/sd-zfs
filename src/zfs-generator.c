@@ -280,11 +280,11 @@ int generateSysrootUnit(char *directory, int bootfs, char *dataset, char *snapsh
 	// Discover bootfs
 	if (bootfs == 1) {
 		if (dataset == NULL) {
-			what = malloc((strlen("zfs:AUTO") + 1) * sizeof(char));
-			strcpy(what, "zfs:AUTO");
+			what = malloc((strlen("ZFS=AUTO") + 1) * sizeof(char));
+			strcpy(what, "ZFS=AUTO");
 		} else {
-			what = malloc((strlen("zfs:AUTO:") + strlen(dataset) + 1) * sizeof(char));
-			strcpy(what, "zfs:AUTO:");
+			what = malloc((strlen("ZFS=AUTO:") + strlen(dataset) + 1) * sizeof(char));
+			strcpy(what, "ZFS=AUTO:");
 			strcat(what, dataset);
 		}
 	} else {
@@ -360,7 +360,7 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 	// Handle non-ZFS values
-	if (strncmp(root, "zfs:", strlen("zfs:")) != 0) {
+	if (strncmp(root, "ZFS=", strlen("ZFS=")) != 0) {
 		printf("root= does not point to anything ZFS-related. Quitting\n");
 		exit(0);
 	}
@@ -376,7 +376,7 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 	// Generate units
-	if (strcmp(root, "zfs:AUTO") != 0 && strncmp(root, "zfs:AUTO@", strlen("zfs:AUTO@")) != 0) {
+	if (strcmp(root, "ZFS=AUTO") != 0 && strncmp(root, "ZFS=AUTO@", strlen("ZFS=AUTO@")) != 0) {
 		poolName = malloc((strlen(root) - 4 + 1) * sizeof(char));
 		strcpy(poolName, &(root[4]));
 
@@ -410,9 +410,9 @@ int main(int argc, char *argv[]) {
 	strtok(root, "@");
 	snap = strtok(NULL, "@");
 	// Direct dataset
-	if (strcmp(root, "zfs:AUTO") != 0) {
-		dataset = malloc((strlen(root) - strlen("zfs:") + 1) * sizeof(char));
-		strcpy(dataset, &(root[strlen("zfs:")]));
+	if (strcmp(root, "ZFS=AUTO") != 0) {
+		dataset = malloc((strlen(root) - strlen("ZFS=") + 1) * sizeof(char));
+		strcpy(dataset, &(root[strlen("ZFS=")]));
 		free(root);
 
 		if (generateSysrootUnit(argv[systemd_param], 0, dataset, snap) != 0) {
