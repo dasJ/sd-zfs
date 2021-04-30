@@ -22,7 +22,7 @@ As snapshots are read-only and not bootable, they are automatically cloned to ne
 All subdatasets wil be checked for the same snapshot.
 
 Example:
-- Boot with root=tank/root@snap
+- Boot with root=ZFS=tank/root@snap
 - The following datasets with the following snapshots exist:
 ```
 tank/root
@@ -48,8 +48,8 @@ Users without Arch should read the manual installation instructions at the botto
 sd-zfs supports multiple kernel parameters to select what dataset to boot from and to tune the booting process.
 
 #### Which dataset to boot from
-- `root=zfs:somepool/somedataset` - Use this dataset to boot from
-- `root=zfs:AUTO` - Check all pools for the bootfs value. See rpool to narrow the search
+- `root=ZFS=somepool/somedataset` - Use this dataset to boot from
+- `root=ZFS=AUTO` - Check all pools for the bootfs value. See rpool to narrow the search
 - `rpool=somepool` - Check only this pool for the bootfs value. This may not contain slashes
 
 The root option can be suffixed with `@snap` to boot from a snapshot named `snap`.
@@ -132,7 +132,7 @@ This can be prevented via kernel parameter.
 
 ### Mounting
 The systemd unit `sysroot.mount` is overriden so it will run a custom command.
-This command figures out the bootfs (if `zfs:AUTO` is used) and handles snapshot creation.
+This command figures out the bootfs (if `ZFS=AUTO` is used) and handles snapshot creation.
 It proceeds to mount the correct dataset, including all subdatasets.
 
 ### Switching root

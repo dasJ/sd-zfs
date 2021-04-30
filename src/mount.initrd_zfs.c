@@ -13,9 +13,9 @@ int handleBootfs(char **pool) {
 	int ret = 1;
 
 	// Handle rpool
-	if (strncmp(*pool, "zfs:AUTO:", strlen("zfs:AUTO:")) == 0) {
-		rpool = malloc((strlen(*pool) - strlen("zfs:AUTO:") + 1) * sizeof(char));
-		strcpy(rpool, &((*pool)[strlen("zfs:AUTO:")]));
+	if (strncmp(*pool, "ZFS=AUTO:", strlen("ZFS=AUTO:")) == 0) {
+		rpool = malloc((strlen(*pool) - strlen("ZFS=AUTO:") + 1) * sizeof(char));
+		strcpy(rpool, &((*pool)[strlen("ZFS=AUTO:")]));
 	}
 
 	ret = zfs_get_bootfs(rpool, pool);
@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
 	snap = strtok(NULL, "@");
 
 	// Check if we need to handle bootfs
-	if (strncmp(dataset, "zfs:AUTO", strlen("zfs:AUTO")) == 0) {
+	if (strncmp(dataset, "ZFS=AUTO", strlen("ZFS=AUTO")) == 0) {
 		if (handleBootfs(&dataset) != 0) {
 			fprintf(stderr, "Can not get bootfs value\n");
 			free(dataset);
